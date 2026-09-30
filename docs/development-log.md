@@ -33,5 +33,37 @@ After the formatting correction, linting passed, strict type checking passed, an
 
 ### Next milestone
 
-Phase 2 will add database migrations, tenant and document models, API-key tenant resolution, document ingestion state, and tenant-isolation tests. Phase 2 begins only after the Phase 1 quality checks and local service startup pass.
+Phase 2 will add database migrations, tenant and document models, API-key tenant resolution, document ingestion state, and tenant-isolation tests. Phase 2 began after local code checks and the GitHub container build passed; full local Compose startup remains pending because Docker is unavailable on this laptop.
+
+## 2026-09-30 Phase 2 tenant model and ingestion
+
+### Scope
+
+This milestone adds the first domain data without adding embeddings or AI generation. It establishes who owns a document, how files become normalized chunks, how repeated requests are handled, and how schema changes are reproduced.
+
+### Work completed
+
+1. Added an Alembic migration for tenants, hashed API keys, documents, ordered chunks, and ingestion jobs.
+2. Added two-customer seeding for FinServe and CloudOps. Newly generated raw keys are printed once; only their hashes enter the database.
+3. Added API-key authentication and server-derived tenant context. Clients cannot choose a tenant through a request field.
+4. Added TXT, Markdown, and text-based PDF parsing with a 2 MB limit, UTF-8 validation, text normalization, and deterministic SHA-256 checksums.
+5. Added paragraph-aware chunking and persisted source metadata. Embeddings are intentionally deferred until Phase 3.
+6. Added document upload, document lookup, and ingestion-job lookup endpoints under `/v1`.
+7. Added tenant-scoped duplicate detection. A repeated upload for one tenant returns the existing record; another tenant receives an independent record.
+8. Added tests for parsing, chunking, API-key helpers, idempotent upload, invalid formats, and cross-tenant isolation.
+9. Updated GitHub Actions to current Node.js-based action versions after the initial run warned that the older checkout action used a deprecated runtime.
+
+### Debugging record
+
+- The first lint pass rejected FastAPI's dependency calls in default arguments and identified one long signature plus unsorted imports. The endpoints were converted to typed `Annotated` dependencies, the imports were ordered, and long expressions were wrapped. This preserved FastAPI behavior while satisfying the shared lint policy.
+- The migration was rendered in PostgreSQL offline mode to check its SQL without requiring a local database server. The generated SQL creates the expected tables, constraints, indexes, and enum inside one transaction.
+- Docker is still unavailable locally. GitHub Actions remains the container-build verification environment until Docker Desktop is installed.
+
+### Verification result
+
+Linting and strict type checking pass. All 17 tests pass with 90% statement coverage, above the 85% gate. The PostgreSQL migration renders successfully. The next remote CI run will verify installation and image creation in Linux.
+
+### Next milestone
+
+Phase 3 will add a swappable embedding interface, a deterministic development embedding provider, pgvector storage, BM25 lexical search, and tenant-scoped retrieval tests. A downloadable Hugging Face embedding model will be introduced only after the backend contract works without network access.
 

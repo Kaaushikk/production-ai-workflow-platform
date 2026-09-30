@@ -4,20 +4,22 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.responses import JSONResponse
+from sqlalchemy.engine import Engine
 from sqlalchemy.exc import SQLAlchemyError
 
 from platform_api.config import get_settings
-from platform_api.database import build_engine, check_database
+from platform_api.database import build_engine, build_session_factory, check_database
 from platform_api.logging import configure_logging
+from platform_api.routes.documents import router as documents_router
 from platform_api.schemas import ErrorResponse, HealthResponse, ReadinessResponse
 
 logger = logging.getLogger(__name__)
 
 
-def create_app() -> FastAPI:
+def create_app(*, engine_override: Engine | None = None) -> FastAPI:
     settings = get_settings()
     configure_logging(settings.log_level)
-    engine = build_engine(settings)
+    engine = engine_override or build_engine(settings)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
@@ -34,6 +36,8 @@ def create_app() -> FastAPI:
     )
     app.state.settings = settings
     app.state.engine = engine
+    app.state.session_factory = build_session_factory(engine)
+    app.include_router(documents_router, prefix="/v1")
 
     @app.exception_handler(SQLAlchemyError)
     async def database_error_handler(_: Request, exc: SQLAlchemyError) -> JSONResponse:
