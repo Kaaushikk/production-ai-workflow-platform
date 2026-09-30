@@ -10,6 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from platform_api.config import get_settings
 from platform_api.database import build_engine, build_session_factory, check_database
 from platform_api.logging import configure_logging
+from platform_api.routes.agent import router as agent_router
 from platform_api.routes.documents import router as documents_router
 from platform_api.routes.query import router as query_router
 from platform_api.routes.search import router as search_router
@@ -39,6 +40,7 @@ def create_app(*, engine_override: Engine | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = build_session_factory(engine)
+    app.include_router(agent_router, prefix="/v1")
     app.include_router(documents_router, prefix="/v1")
     app.include_router(query_router, prefix="/v1")
     app.include_router(search_router, prefix="/v1")

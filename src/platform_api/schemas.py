@@ -103,3 +103,15 @@ class QueryResponse(BaseModel):
     excluded_unsafe_chunks: int
     latency_ms: int
 
+
+class AgentRequest(BaseModel):
+    task: str = Field(min_length=2, max_length=1000)
+
+
+class AgentResponse(BaseModel):
+    run_id: uuid.UUID
+    tool_name: str
+    result: dict[str, object]
+    steps: int
+    latency_ms: int
+

@@ -4,7 +4,7 @@ A portfolio project for building and evaluating a multi-tenant AI application wi
 
 ## Current status
 
-Phases 1 through 4 are implemented: the API and PostgreSQL foundation, tenant-scoped ingestion, pgvector storage, hybrid search, grounded extractive answers, citation validation, abstention, and query history. See [the development log](docs/development-log.md) for the running implementation record.
+Phases 1 through 5 are implemented: the API and storage foundation, tenant-scoped ingestion, hybrid retrieval, grounded answers, and bounded allow-listed tools with audit records. See [the development log](docs/development-log.md) for the running implementation record.
 
 ## Repository tree
 
@@ -16,6 +16,8 @@ Phases 1 through 4 are implemented: the API and PostgreSQL foundation, tenant-sc
 |-- src/platform_api/
 |   |-- routes/documents.py
 |   |-- routes/query.py
+|   |-- routes/agent.py
+|   |-- agent.py
 |   |-- auth.py
 |   |-- answers.py
 |   |-- config.py
@@ -28,6 +30,7 @@ Phases 1 through 4 are implemented: the API and PostgreSQL foundation, tenant-sc
 |   |-- models.py
 |   |-- retrieval.py
 |   |-- search_service.py
+|   |-- tools.py
 |   `-- schemas.py
 |-- migrations/versions/0001_tenants_and_ingestion.py
 |-- scripts/seed_tenants.py
@@ -114,6 +117,12 @@ The current search implementation scores the authenticated tenant's corpus in th
 
 Retrieved chunks containing common instruction-manipulation phrases are excluded before answering. This is one defense layer and is not presented as complete prompt-injection protection. Every query result, citation list, provider name, abstention decision, and measured request latency is stored in tenant-scoped query history.
 
+## Phase 5 controlled tools
+
+`POST /v1/ai/agent` uses a deterministic planner and exactly one read-only tool per request. The registry currently allows document search, tenant document count, and tenant-scoped document metadata lookup. Every argument is validated with a schema, the authenticated tenant is supplied by the server, and every successful or failed tool call is audited.
+
+This baseline does not execute generated SQL, shell commands, arbitrary URLs, or client-supplied tenant IDs. It also does not claim autonomous reasoning. Later customer-specific tools will keep the same registry and audit contract.
+
 ## Configuration
 
 All settings use the `APP_` prefix. Copy `.env.example` for local development and never commit real credentials. Docker Compose supplies its own database hostname because containers reach PostgreSQL by service name, while the default application setting uses `localhost` for a directly run API.
@@ -131,8 +140,8 @@ All settings use the `APP_` prefix. Copy `.env.example` for local development an
 2. Tenant model and ingestion — complete
 3. Embeddings, pgvector, and BM25 — complete baseline
 4. Hybrid RAG with citations — complete baseline
-5. Safe tools and bounded agent behavior — next
-6. PyTorch model training and inference service
+5. Safe tools and bounded agent behavior — complete baseline
+6. PyTorch model training and inference service — next
 7. Kafka worker
 8. Redis reliability features
 9. Evaluation framework

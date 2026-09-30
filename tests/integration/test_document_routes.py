@@ -160,6 +160,30 @@ def test_query_abstains_when_tenant_has_no_supporting_evidence(
     assert response.json()["citations"] == []
 
 
+def test_agent_uses_allowlisted_tenant_scoped_tool(tenant_client: TestClient) -> None:
+    tenant_client.post(
+        "/v1/documents",
+        headers={"X-API-Key": FIN_KEY},
+        files={"file": ("one.txt", b"Payment policy", "text/plain")},
+    )
+    tenant_client.post(
+        "/v1/documents",
+        headers={"X-API-Key": CLOUD_KEY},
+        files={"file": ("two.txt", b"Cloud policy", "text/plain")},
+    )
+
+    response = tenant_client.post(
+        "/v1/ai/agent",
+        headers={"X-API-Key": FIN_KEY},
+        json={"task": "How many documents are indexed?"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["tool_name"] == "count_documents"
+    assert response.json()["result"] == {"document_count": 1}
+    assert response.json()["steps"] == 1
+
+
 def test_upload_requires_valid_api_key_and_supported_file(tenant_client: TestClient) -> None:
     missing_key = tenant_client.post(
         "/v1/documents", files={"file": ("policy.txt", b"text", "text/plain")}

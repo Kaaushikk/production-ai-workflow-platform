@@ -124,3 +124,30 @@ The extractive provider is intentionally limited but testable and fully offline.
 
 All 27 tests pass with 94% statement coverage. Strict type checking passes. The final lint recheck and GitHub container build remain before the phase is marked complete.
 
+## 2026-09-30 Phase 5 controlled tools and bounded agent
+
+### Scope
+
+This milestone introduces tool selection without allowing arbitrary actions. The first planner is deterministic so tool authorization, argument validation, tenant isolation, and auditing can be verified independently of an LLM.
+
+### Work completed
+
+1. Added a tool registry that rejects every unregistered name and validates tool arguments with schemas that forbid extra fields.
+2. Added three read-only tools: tenant-scoped document search, document count, and document metadata lookup.
+3. Added a deterministic planner for the supported intents. Each request has exactly one tool step, which provides a clear hard bound.
+4. Added `/v1/ai/agent` and a tool-call audit table containing sanitized arguments, result data, success state, error code, and latency.
+5. Kept tenant identity out of tool arguments. The server passes authenticated tenant context directly to every tool.
+6. Added tests for unknown-tool rejection, invalid arguments, planner routing, one-step limits, and tenant-scoped document counts.
+
+### Security boundary
+
+No tool accepts SQL, shell commands, file paths, external URLs, or a tenant identifier. The planner cannot dynamically register tools. This is a safe baseline, not an autonomous agent claim. Any future LLM planner must produce one of the same validated plans and remain subject to a fixed step and time budget.
+
+### Debugging record
+
+- The first lint run found one database-count expression one character beyond the configured line length. It was reformatted without changing the query.
+
+### Verification result
+
+All 30 tests pass with 93% statement coverage and strict type checking passes. Final lint, migration rendering, and GitHub CI remain before the phase is complete.
+

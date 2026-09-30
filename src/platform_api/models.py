@@ -124,3 +124,18 @@ class QueryRecord(Base):
     latency_ms: Mapped[int]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
+
+class ToolCallRecord(Base):
+    __tablename__ = "tool_calls"
+    __table_args__ = (Index("ix_tool_calls_tenant_created", "tenant_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    tool_name: Mapped[str] = mapped_column(String(100))
+    arguments_json: Mapped[dict[str, Any]] = mapped_column(JSON)
+    result_json: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    success: Mapped[bool]
+    error_code: Mapped[str | None] = mapped_column(String(100))
+    latency_ms: Mapped[int]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+
