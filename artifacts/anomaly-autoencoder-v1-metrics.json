@@ -1,0 +1,28 @@
+{
+  "model_version": "anomaly-autoencoder-v1",
+  "data": {
+    "source": "deterministic synthetic operational metrics",
+    "training_normal": 2400,
+    "validation_normal": 600,
+    "test_examples": 1200,
+    "test_anomalies": 300,
+    "seed": 42
+  },
+  "threshold": 3.2745089530944824,
+  "autoencoder": {
+    "precision": 0.970873786407767,
+    "recall": 1.0,
+    "f1": 0.9852216748768473,
+    "false_positive_rate": 0.01,
+    "test_examples": 1200,
+    "test_anomalies": 300
+  },
+  "zscore_baseline": {
+    "precision": 0.9063444108761329,
+    "recall": 1.0,
+    "f1": 0.9508716323296355,
+    "false_positive_rate": 0.034444444444444444,
+    "test_examples": 1200,
+    "test_anomalies": 300
+  }
+}

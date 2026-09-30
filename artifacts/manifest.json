@@ -1,0 +1,10 @@
+{
+  "model_version": "anomaly-autoencoder-v1",
+  "artifact": "anomaly-autoencoder-v1.pt",
+  "artifact_sha256": "378967440F768A20C652CC807730F2F8FF63D604219998219556B117C2A0630E",
+  "metrics": "anomaly-autoencoder-v1-metrics.json",
+  "metrics_sha256": "14A96B387BF15CA8DCFDFAED35BBB907B8C7B96F0AA996E38E19819C80CE524C",
+  "training_seed": 42,
+  "epochs": 80,
+  "data_scope": "deterministic synthetic operational metrics"
+}

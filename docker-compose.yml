@@ -37,6 +37,21 @@ services:
       timeout: 3s
       retries: 10
 
+  inference:
+    build:
+      context: .
+      dockerfile: Dockerfile.inference
+    environment:
+      MODEL_ARTIFACT_PATH: artifacts/anomaly-autoencoder-v1.pt
+    ports:
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8001/ready')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+
 volumes:
   postgres_data:
 

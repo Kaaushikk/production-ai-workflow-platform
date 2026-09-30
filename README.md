@@ -4,7 +4,7 @@ A portfolio project for building and evaluating a multi-tenant AI application wi
 
 ## Current status
 
-Phases 1 through 5 are implemented: the API and storage foundation, tenant-scoped ingestion, hybrid retrieval, grounded answers, and bounded allow-listed tools with audit records. See [the development log](docs/development-log.md) for the running implementation record.
+Phases 1 through 6 are implemented: the API and storage foundation, tenant-scoped AI workflows, bounded tools, and a trained PyTorch anomaly model served by a dedicated inference service. See [the development log](docs/development-log.md) for the running implementation record.
 
 ## Repository tree
 
@@ -32,6 +32,15 @@ Phases 1 through 5 are implemented: the API and storage foundation, tenant-scope
 |   |-- search_service.py
 |   |-- tools.py
 |   `-- schemas.py
+|-- src/inference_service/
+|   |-- data.py
+|   |-- model.py
+|   |-- training.py
+|   `-- main.py
+|-- artifacts/
+|   |-- anomaly-autoencoder-v1.pt
+|   |-- anomaly-autoencoder-v1-metrics.json
+|   `-- manifest.json
 |-- migrations/versions/0001_tenants_and_ingestion.py
 |-- scripts/seed_tenants.py
 |-- tests/
@@ -64,6 +73,12 @@ Invoke-RestMethod http://localhost:8000/ready
 ```
 
 Expected results are `status: ok` for health and `status: ready` with `database: ok` for readiness.
+
+The inference service runs on port 8001. Its readiness endpoint reports the loaded model version:
+
+```powershell
+Invoke-RestMethod http://localhost:8001/ready
+```
 
 Create the two simulated tenants and development API keys:
 
@@ -123,6 +138,18 @@ Retrieved chunks containing common instruction-manipulation phrases are excluded
 
 This baseline does not execute generated SQL, shell commands, arbitrary URLs, or client-supplied tenant IDs. It also does not claim autonomous reasoning. Later customer-specific tools will keep the same registry and audit contract.
 
+## Phase 6 anomaly model
+
+The ML component is a small PyTorch autoencoder trained only on normal synthetic operational metrics. It uses CPU, memory, latency, error rate, request rate, and queue depth. Training is deterministic and compares the learned reconstruction-error detector with a z-score baseline.
+
+```powershell
+.\.venv\Scripts\python.exe -m inference_service.training
+```
+
+The committed report is tied to model version `anomaly-autoencoder-v1`, seed 42, 2,400 normal training rows, 600 normal validation rows, and a 1,200-row synthetic test set containing 300 anomalies. On that synthetic test set, the autoencoder measured F1 `0.9852` and false-positive rate `0.0100`; the z-score baseline measured F1 `0.9509` and false-positive rate `0.0344`. These are reproducible synthetic-data results and are not claims about real production performance.
+
+The separate inference service loads the artifact once at startup, validates batches of up to 100 rows, and returns anomaly scores, threshold decisions, and the exact model version. The artifact manifest records SHA-256 hashes for provenance.
+
 ## Configuration
 
 All settings use the `APP_` prefix. Copy `.env.example` for local development and never commit real credentials. Docker Compose supplies its own database hostname because containers reach PostgreSQL by service name, while the default application setting uses `localhost` for a directly run API.
@@ -141,8 +168,8 @@ All settings use the `APP_` prefix. Copy `.env.example` for local development an
 3. Embeddings, pgvector, and BM25 — complete baseline
 4. Hybrid RAG with citations — complete baseline
 5. Safe tools and bounded agent behavior — complete baseline
-6. PyTorch model training and inference service — next
-7. Kafka worker
+6. PyTorch model training and inference service — complete
+7. Kafka worker — next
 8. Redis reliability features
 9. Evaluation framework
 10. OpenTelemetry, Prometheus, and Grafana

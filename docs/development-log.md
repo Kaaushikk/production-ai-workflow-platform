@@ -151,3 +151,35 @@ No tool accepts SQL, shell commands, file paths, external URLs, or a tenant iden
 
 All 30 tests pass with 93% statement coverage and strict type checking passes. Final lint, migration rendering, and GitHub CI remain before the phase is complete.
 
+## 2026-09-30 Phase 6 PyTorch anomaly model and inference service
+
+### Scope
+
+This milestone adds a real trained non-LLM model, a reproducible comparison against a simpler baseline, versioned artifacts, and a dedicated service that loads the model once.
+
+### Work completed
+
+1. Added deterministic synthetic operational metrics with six features and explicit normal and anomalous distributions.
+2. Added a small PyTorch autoencoder trained only on normal training rows. A validation-only normal split sets the reconstruction threshold at the 99th percentile.
+3. Added precision, recall, F1, and false-positive-rate calculations from observed test predictions.
+4. Compared the learned model with a three-standard-deviation z-score baseline on the same held-out synthetic test rows.
+5. Saved a 4.5 KB model artifact, a JSON metrics report, and a manifest with SHA-256 hashes, seed, epoch count, and data scope.
+6. Added a separate FastAPI inference service with startup loading, readiness, feature-range validation, batch limits, model version reporting, and CPU inference.
+7. Added a separate inference Dockerfile and Compose service so the main API image does not install PyTorch.
+8. Added tests for deterministic data, metric calculations, artifact loading, relative anomaly scores, readiness, request validation, and end-to-end prediction.
+
+### Measured result
+
+On the deterministic synthetic test set of 1,200 rows, including 300 generated anomalies, the autoencoder measured precision 0.9709, recall 1.0000, F1 0.9852, and false-positive rate 0.0100. The z-score baseline measured precision 0.9063, recall 1.0000, F1 0.9509, and false-positive rate 0.0344. These measurements describe only this synthetic generator and seed; they do not establish real-world anomaly quality.
+
+### Debugging record
+
+- PyTorch required a 124 MB wheel and Windows took several minutes to finish installing it. The package was isolated in the `ml` optional dependency group so the main API container stays smaller.
+- NumPy's current type stubs use Python 3.12 syntax while the checker originally targeted Python 3.11. The runtime project still accepts Python 3.11+, while static checks target the Python 3.12 CI runtime and skip traversal into large third-party NumPy and PyTorch stubs.
+- Strict typing then identified the intentionally untyped external tensor boundary. Targeted annotations and one narrow ignore for the external `torch.nn.Module` base resolved it without weakening checks for project code.
+- Model loading was changed to PyTorch's restricted `weights_only` mode and rechecked successfully.
+
+### Verification result
+
+All 35 tests pass with 89% combined statement coverage. Linting and strict type checking pass. GitHub CI and the inference-container build remain before the phase is complete.
+
