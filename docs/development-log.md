@@ -95,3 +95,32 @@ The first search implementation loads one tenant's chunks and scores them in the
 
 Strict type checking passes. All 22 tests pass with 92% statement coverage. The final lint recheck and GitHub container build are required before the phase is marked complete.
 
+## 2026-09-30 Phase 4 grounded answers and citations
+
+### Scope
+
+This milestone turns retrieval results into an evidence-backed response while preserving the ability to change answer providers later. It also records what the system answered and makes unsupported questions fail safely.
+
+### Work completed
+
+1. Extracted retrieval into a reusable tenant-scoped service shared by search and question answering.
+2. Added an answer-provider interface and an offline extractive baseline. The baseline selects relevant source sentences rather than generating unsupported prose.
+3. Added citation validation by constructing citations only from chunk IDs returned by retrieval. Clients cannot supply citation IDs.
+4. Added abstention when no safe supporting sentence overlaps the question.
+5. Added a conservative retrieved-content filter for common prompt-injection phrases and a response field showing how many chunks were excluded.
+6. Added a query-history migration storing the tenant, question, answer, citations, provider, abstention decision, and measured latency.
+7. Added `/v1/ai/query` and tests for supported answers, valid citations, unsupported questions, malicious retrieved instructions, and answer-provider behavior.
+
+### Engineering tradeoff
+
+The extractive provider is intentionally limited but testable and fully offline. It proves the grounding, citation, abstention, and persistence contracts before a hosted or local generative model is introduced. A future LLM provider must satisfy the same contract and will be evaluated against this baseline.
+
+### Debugging record
+
+- The first Phase 4 lint pass found an import-order issue after the search route was reduced to a wrapper around the new retrieval service. The imports were reordered without changing behavior.
+- The query-history migration rendered successfully for PostgreSQL. The API tests use an isolated in-memory database and validate the complete upload, retrieval, answer, and citation path.
+
+### Verification result
+
+All 27 tests pass with 94% statement coverage. Strict type checking passes. The final lint recheck and GitHub container build remain before the phase is marked complete.
+

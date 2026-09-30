@@ -109,3 +109,18 @@ class IngestionJob(Base):
 
     document: Mapped[Document] = relationship(back_populates="ingestion_job")
 
+
+class QueryRecord(Base):
+    __tablename__ = "queries"
+    __table_args__ = (Index("ix_queries_tenant_created", "tenant_id", "created_at"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    question: Mapped[str] = mapped_column(Text)
+    answer: Mapped[str] = mapped_column(Text)
+    citations_json: Mapped[list[dict[str, Any]]] = mapped_column(JSON, default=list)
+    abstained: Mapped[bool]
+    provider_name: Mapped[str] = mapped_column(String(100))
+    latency_ms: Mapped[int]
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+

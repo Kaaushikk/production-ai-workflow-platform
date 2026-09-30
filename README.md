@@ -4,7 +4,7 @@ A portfolio project for building and evaluating a multi-tenant AI application wi
 
 ## Current status
 
-Phases 1 through 3 are implemented: the API and PostgreSQL foundation, tenant-scoped ingestion, pgvector storage, deterministic development embeddings, BM25 scoring, and hybrid search. See [the development log](docs/development-log.md) for the running implementation record.
+Phases 1 through 4 are implemented: the API and PostgreSQL foundation, tenant-scoped ingestion, pgvector storage, hybrid search, grounded extractive answers, citation validation, abstention, and query history. See [the development log](docs/development-log.md) for the running implementation record.
 
 ## Repository tree
 
@@ -15,7 +15,9 @@ Phases 1 through 3 are implemented: the API and PostgreSQL foundation, tenant-sc
 |   `-- development-log.md
 |-- src/platform_api/
 |   |-- routes/documents.py
+|   |-- routes/query.py
 |   |-- auth.py
+|   |-- answers.py
 |   |-- config.py
 |   |-- database.py
 |   |-- dependencies.py
@@ -25,6 +27,7 @@ Phases 1 through 3 are implemented: the API and PostgreSQL foundation, tenant-sc
 |   |-- main.py
 |   |-- models.py
 |   |-- retrieval.py
+|   |-- search_service.py
 |   `-- schemas.py
 |-- migrations/versions/0001_tenants_and_ingestion.py
 |-- scripts/seed_tenants.py
@@ -105,6 +108,12 @@ The readiness success path needs PostgreSQL. Phase 1's automated test uses a con
 
 The current search implementation scores the authenticated tenant's corpus in the application. This is deliberate for a small, inspectable baseline. The schema includes a pgvector HNSW index; a later performance milestone will move vector candidate selection into PostgreSQL and compare exact and approximate recall before claiming scalability.
 
+## Phase 4 grounded query
+
+`POST /v1/ai/query` retrieves tenant-scoped evidence and returns an answer whose numbered citations map only to the retrieved chunks. The current provider is an offline extractive baseline: it selects relevant source sentences and does not invent connecting prose. It abstains when no source sentence shares meaningful terms with the question.
+
+Retrieved chunks containing common instruction-manipulation phrases are excluded before answering. This is one defense layer and is not presented as complete prompt-injection protection. Every query result, citation list, provider name, abstention decision, and measured request latency is stored in tenant-scoped query history.
+
 ## Configuration
 
 All settings use the `APP_` prefix. Copy `.env.example` for local development and never commit real credentials. Docker Compose supplies its own database hostname because containers reach PostgreSQL by service name, while the default application setting uses `localhost` for a directly run API.
@@ -121,8 +130,8 @@ All settings use the `APP_` prefix. Copy `.env.example` for local development an
 1. Foundation and PostgreSQL
 2. Tenant model and ingestion — complete
 3. Embeddings, pgvector, and BM25 — complete baseline
-4. Hybrid RAG with citations — next
-5. Safe tools and bounded agent behavior
+4. Hybrid RAG with citations — complete baseline
+5. Safe tools and bounded agent behavior — next
 6. PyTorch model training and inference service
 7. Kafka worker
 8. Redis reliability features

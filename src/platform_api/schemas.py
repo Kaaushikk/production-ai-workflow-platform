@@ -81,3 +81,25 @@ class SearchResponse(BaseModel):
     embedding_provider: str
     results: list[SearchResult]
 
+
+class QueryRequest(BaseModel):
+    question: str = Field(min_length=2, max_length=1000)
+    retrieval_limit: int = Field(default=5, ge=1, le=10)
+
+
+class Citation(BaseModel):
+    index: int
+    chunk_id: uuid.UUID
+    document_id: uuid.UUID
+    title: str
+
+
+class QueryResponse(BaseModel):
+    query_id: uuid.UUID
+    answer: str
+    citations: list[Citation]
+    abstained: bool
+    provider: str
+    excluded_unsafe_chunks: int
+    latency_ms: int
+

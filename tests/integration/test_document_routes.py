@@ -114,6 +114,52 @@ def test_search_returns_only_authenticated_tenant_results(tenant_client: TestCli
     assert response.json()["results"][0]["title"] == "payments.txt"
 
 
+def test_query_returns_grounded_answer_and_valid_citation(tenant_client: TestClient) -> None:
+    uploaded = tenant_client.post(
+        "/v1/documents",
+        headers={"X-API-Key": FIN_KEY},
+        files={
+            "file": (
+                "recovery.txt",
+                b"Payment timeouts require retrying after five minutes.",
+                "text/plain",
+            )
+        },
+    )
+
+    response = tenant_client.post(
+        "/v1/ai/query",
+        headers={"X-API-Key": FIN_KEY},
+        json={"question": "How should payment timeouts be handled?"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["abstained"] is False
+    assert response.json()["provider"] == "extractive-baseline-v1"
+    assert response.json()["citations"][0]["document_id"] == uploaded.json()["id"]
+    assert response.json()["answer"].endswith("[1]")
+
+
+def test_query_abstains_when_tenant_has_no_supporting_evidence(
+    tenant_client: TestClient,
+) -> None:
+    tenant_client.post(
+        "/v1/documents",
+        headers={"X-API-Key": CLOUD_KEY},
+        files={"file": ("runbook.txt", b"Database backups run nightly.", "text/plain")},
+    )
+
+    response = tenant_client.post(
+        "/v1/ai/query",
+        headers={"X-API-Key": FIN_KEY},
+        json={"question": "When do database backups run?"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["abstained"] is True
+    assert response.json()["citations"] == []
+
+
 def test_upload_requires_valid_api_key_and_supported_file(tenant_client: TestClient) -> None:
     missing_key = tenant_client.post(
         "/v1/documents", files={"file": ("policy.txt", b"text", "text/plain")}
