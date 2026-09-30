@@ -4,7 +4,7 @@ A portfolio project for building and evaluating a multi-tenant AI application wi
 
 ## Current status
 
-Phases 1 and 2 are implemented: the FastAPI and PostgreSQL foundation, versioned migrations, tenant API keys, document parsing and chunking, tenant-scoped ingestion records, duplicate detection, and isolation tests. See [the development log](docs/development-log.md) for the running implementation record.
+Phases 1 through 3 are implemented: the API and PostgreSQL foundation, tenant-scoped ingestion, pgvector storage, deterministic development embeddings, BM25 scoring, and hybrid search. See [the development log](docs/development-log.md) for the running implementation record.
 
 ## Repository tree
 
@@ -19,10 +19,12 @@ Phases 1 and 2 are implemented: the FastAPI and PostgreSQL foundation, versioned
 |   |-- config.py
 |   |-- database.py
 |   |-- dependencies.py
+|   |-- embeddings.py
 |   |-- ingestion.py
 |   |-- logging.py
 |   |-- main.py
 |   |-- models.py
+|   |-- retrieval.py
 |   `-- schemas.py
 |-- migrations/versions/0001_tenants_and_ingestion.py
 |-- scripts/seed_tenants.py
@@ -97,6 +99,12 @@ The readiness success path needs PostgreSQL. Phase 1's automated test uses a con
 - A SHA-256 checksum makes retries idempotent within a tenant. The same content can still be ingested independently by another tenant.
 - Ingestion is synchronous for now so the persistence contract can be tested before Kafka workers are introduced.
 
+## Phase 3 search
+
+`POST /v1/ai/search` accepts a query and result limit. New chunks receive 384-dimensional vectors stored in pgvector. The current offline provider uses stable feature hashing, which makes tests and local development reproducible but does not provide the semantic quality of a trained embedding model. Results combine cosine similarity and BM25 scores with reciprocal-rank fusion.
+
+The current search implementation scores the authenticated tenant's corpus in the application. This is deliberate for a small, inspectable baseline. The schema includes a pgvector HNSW index; a later performance milestone will move vector candidate selection into PostgreSQL and compare exact and approximate recall before claiming scalability.
+
 ## Configuration
 
 All settings use the `APP_` prefix. Copy `.env.example` for local development and never commit real credentials. Docker Compose supplies its own database hostname because containers reach PostgreSQL by service name, while the default application setting uses `localhost` for a directly run API.
@@ -112,8 +120,8 @@ All settings use the `APP_` prefix. Copy `.env.example` for local development an
 
 1. Foundation and PostgreSQL
 2. Tenant model and ingestion — complete
-3. Embeddings, pgvector, and BM25 — next
-4. Hybrid RAG with citations
+3. Embeddings, pgvector, and BM25 — complete baseline
+4. Hybrid RAG with citations — next
 5. Safe tools and bounded agent behavior
 6. PyTorch model training and inference service
 7. Kafka worker

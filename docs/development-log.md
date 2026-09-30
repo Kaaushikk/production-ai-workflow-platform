@@ -67,3 +67,31 @@ Linting and strict type checking pass. All 17 tests pass with 90% statement cove
 
 Phase 3 will add a swappable embedding interface, a deterministic development embedding provider, pgvector storage, BM25 lexical search, and tenant-scoped retrieval tests. A downloadable Hugging Face embedding model will be introduced only after the backend contract works without network access.
 
+## 2026-09-30 Phase 3 embedding and hybrid retrieval baseline
+
+### Scope
+
+This milestone makes uploaded chunks searchable without introducing an LLM. It creates a measurable retrieval baseline that works offline and keeps embedding generation behind a replaceable interface.
+
+### Work completed
+
+1. Added a 384-dimensional pgvector column and an HNSW cosine index through a second migration.
+2. Added an embedding provider interface and a deterministic feature-hashing implementation. This is explicitly a development baseline rather than a semantic model.
+3. Embedded document chunks during ingestion and stored the vectors alongside their source metadata.
+4. Implemented cosine similarity, BM25 lexical scoring, and reciprocal-rank fusion as small independently tested functions.
+5. Added the tenant-scoped `/v1/ai/search` endpoint with query and result-count validation.
+6. Added tests for deterministic normalized embeddings, BM25 ordering, hybrid ranking, vector dimension errors, and cross-tenant search isolation.
+
+### Engineering tradeoff
+
+The first search implementation loads one tenant's chunks and scores them in the application. That is easy to inspect and correct for the small synthetic corpus. It is not the intended large-corpus design. Although the database now has an HNSW index, no scale claim will be made until database-side candidate retrieval is implemented and compared with exact search for recall and latency.
+
+### Debugging record
+
+- The first Phase 3 lint run found one import-order issue after adding pgvector. The third-party import was reordered; no behavior changed.
+- The pgvector migration was rendered in PostgreSQL offline mode. It creates the extension, adds `VECTOR(384)`, builds the cosine HNSW index, and updates the migration version in one transaction.
+
+### Verification result
+
+Strict type checking passes. All 22 tests pass with 92% statement coverage. The final lint recheck and GitHub container build are required before the phase is marked complete.
+

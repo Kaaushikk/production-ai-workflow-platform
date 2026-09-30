@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
     from platform_api.models import Document
@@ -59,4 +59,25 @@ class JobResponse(BaseModel):
     created_at: datetime
     started_at: datetime | None
     completed_at: datetime | None
+
+
+class SearchRequest(BaseModel):
+    query: str = Field(min_length=2, max_length=500)
+    limit: int = Field(default=5, ge=1, le=20)
+
+
+class SearchResult(BaseModel):
+    chunk_id: uuid.UUID
+    document_id: uuid.UUID
+    title: str
+    text: str
+    vector_score: float
+    lexical_score: float
+    hybrid_score: float
+
+
+class SearchResponse(BaseModel):
+    query: str
+    embedding_provider: str
+    results: list[SearchResult]
 

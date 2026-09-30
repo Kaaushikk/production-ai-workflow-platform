@@ -3,6 +3,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import JSON, DateTime, Enum, ForeignKey, Index, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -84,6 +85,7 @@ class DocumentChunk(Base):
     ordinal: Mapped[int]
     chunk_text: Mapped[str] = mapped_column(Text)
     metadata_json: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(384))
 
     document: Mapped[Document] = relationship(back_populates="chunks")
 

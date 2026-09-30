@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 
 from platform_api.auth import TenantDep
 from platform_api.dependencies import SessionDep
+from platform_api.embeddings import default_embedding_provider
 from platform_api.ingestion import IngestionError, chunk_text, parse_document
 from platform_api.models import Document, DocumentChunk, IngestionJob, IngestionStatus, utc_now
 from platform_api.schemas import DocumentResponse, JobResponse
@@ -51,12 +52,15 @@ async def upload_document(
         status=IngestionStatus.PROCESSING,
         started_at=utc_now(),
     )
-    for ordinal, text in enumerate(chunk_text(parsed.text)):
+    chunk_texts = chunk_text(parsed.text)
+    embeddings = default_embedding_provider.embed(chunk_texts)
+    for ordinal, (text, embedding) in enumerate(zip(chunk_texts, embeddings, strict=True)):
         document.chunks.append(
             DocumentChunk(
                 tenant_id=tenant.id,
                 ordinal=ordinal,
                 chunk_text=text,
+                embedding=embedding,
                 metadata_json={"source_filename": filename},
             )
         )

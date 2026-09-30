@@ -90,6 +90,30 @@ def test_same_content_is_stored_independently_for_each_tenant(
     assert first.json()["id"] != second.json()["id"]
 
 
+def test_search_returns_only_authenticated_tenant_results(tenant_client: TestClient) -> None:
+    tenant_client.post(
+        "/v1/documents",
+        headers={"X-API-Key": FIN_KEY},
+        files={"file": ("payments.txt", b"Payment timeout recovery steps", "text/plain")},
+    )
+    tenant_client.post(
+        "/v1/documents",
+        headers={"X-API-Key": CLOUD_KEY},
+        files={"file": ("cloud.txt", b"Payment timeout is a private cloud incident", "text/plain")},
+    )
+
+    response = tenant_client.post(
+        "/v1/ai/search",
+        headers={"X-API-Key": FIN_KEY},
+        json={"query": "payment timeout", "limit": 5},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["embedding_provider"] == "hash-embedding-v1"
+    assert len(response.json()["results"]) == 1
+    assert response.json()["results"][0]["title"] == "payments.txt"
+
+
 def test_upload_requires_valid_api_key_and_supported_file(tenant_client: TestClient) -> None:
     missing_key = tenant_client.post(
         "/v1/documents", files={"file": ("policy.txt", b"text", "text/plain")}
