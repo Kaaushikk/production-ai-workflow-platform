@@ -1,0 +1,28 @@
+{
+  "scope": "GitHub-hosted Ubuntu 24.04 runner, local Docker Compose stack",
+  "github_run_id": 36807922456,
+  "git_commit": "b81d185e7c07cb00ef583c7c8ead86eae2ed0803",
+  "locust_version": "2.46.6",
+  "profile": {
+    "users": 10,
+    "spawn_rate_per_second": 2,
+    "duration_seconds": 60,
+    "tenant_rate_limit_per_minute": 10000
+  },
+  "aggregate": {
+    "requests": 918,
+    "failures": 0,
+    "requests_per_second": 15.45,
+    "average_response_ms": 9,
+    "median_response_ms": 9,
+    "p95_response_ms": 17,
+    "p99_response_ms": 28,
+    "maximum_response_ms": 60
+  },
+  "endpoints": {
+    "GET /health": {"requests": 126, "failures": 0, "average_response_ms": 3},
+    "POST /v1/ai/query": {"requests": 454, "failures": 0, "average_response_ms": 11},
+    "POST /v1/ai/search": {"requests": 338, "failures": 0, "average_response_ms": 9}
+  },
+  "limitations": "Short synthetic workload on ephemeral shared-hosted CI hardware with one seeded document; not a production capacity claim."
+}

@@ -333,4 +333,5 @@ All 49 tests pass with 88% measured API/inference coverage. Linting, strict typi
 ### Load-workflow debugging record
 
 - The first 10-user, 60-second Locust run reached the production-style default of 60 tenant requests per minute and correctly returned `429` for later search and query requests. That verified rate limiting but prevented the workflow from measuring the application path. Compose now accepts an environment override, and the performance workflow uses a 10,000-request test budget while the default remains 60.
+- The corrected GitHub run completed 918 requests with zero failures at 15.45 requests per second. Aggregate response time was 9 ms average, 17 ms p95, 28 ms p99, and 60 ms maximum on the ephemeral Ubuntu 24.04 hosted runner with one seeded document. The scoped result and limitations are committed as an artifact.
 

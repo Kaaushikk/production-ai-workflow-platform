@@ -26,6 +26,10 @@ The GitHub `Performance` workflow exposes the user count and duration as manual 
 
 The performance workflow raises the test tenant's request budget to 10,000 per minute so the run measures the application path rather than the default 60-request protection limit. Rate-limit behavior is tested separately in the automated suite.
 
+## Recorded reference run
+
+GitHub run `36807922456` executed the documented 10-user, 60-second profile on an Ubuntu 24.04 hosted runner against the local Compose stack. It completed 918 requests with zero failures, 15.45 requests per second, 9 ms aggregate average response time, 17 ms p95, and 28 ms p99. The corpus contained one seeded document and the run lasted only one minute, so this is workflow verification on ephemeral CI hardware rather than a production capacity result. The complete scoped result is stored in `artifacts/load-test-report-2026-10-01.json`.
+
 ## Recovery behavior
 
 - Kafka delivery failure leaves the outbox row pending with a bounded retry time.

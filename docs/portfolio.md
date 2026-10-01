@@ -8,6 +8,7 @@ Use these statements only for the implemented repository and keep the stated sco
 - Implemented reliable asynchronous processing with Kafka, a transactional PostgreSQL outbox, broker-confirmed retries, dead-letter handling, and idempotent consumer receipts; added Redis tenant rate limiting.
 - Trained and served a versioned PyTorch anomaly autoencoder and compared it with a z-score baseline on a reproducible synthetic dataset; the autoencoder measured 0.9852 F1 and 0.0100 false-positive rate on that specific generated test set.
 - Added OpenTelemetry traces, trace-correlated JSON logs, Prometheus metrics, Tempo, provisioned Grafana dashboards, container CI, deterministic AI regression gates, and Kubernetes release manifests.
+- Verified the documented 10-user, 60-second synthetic CI workload with 918 requests, zero failures, 17 ms p95, and 28 ms p99 on a one-document corpus; keep the runner and workload scope attached to these numbers.
 
 ## Interview talking points
 
