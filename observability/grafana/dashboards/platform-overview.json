@@ -1,0 +1,31 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "Request rate by route",
+      "targets": [{"expr": "sum by (route) (rate(platform_http_requests_total[5m]))"}],
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+    },
+    {
+      "type": "timeseries",
+      "title": "p95 request latency",
+      "targets": [{"expr": "histogram_quantile(0.95, sum by (le, route) (rate(platform_http_request_duration_seconds_bucket[5m])))"}],
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+    },
+    {
+      "type": "timeseries",
+      "title": "5xx response rate",
+      "targets": [{"expr": "sum(rate(platform_http_requests_total{status=~\"5..\"}[5m]))"}],
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["ai-platform"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "title": "Production AI Workflow Platform",
+  "uid": "production-ai-workflow-platform",
+  "version": 1
+}

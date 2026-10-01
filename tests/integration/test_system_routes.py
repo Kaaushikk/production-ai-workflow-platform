@@ -22,6 +22,16 @@ def test_health_reports_service_without_database(client: TestClient) -> None:
     assert response.json()["environment"] == "development"
 
 
+def test_metrics_expose_request_count_and_latency(client: TestClient) -> None:
+    client.get("/health")
+
+    response = client.get("/metrics")
+
+    assert response.status_code == 200
+    assert "platform_http_requests_total" in response.text
+    assert "platform_http_request_duration_seconds_bucket" in response.text
+
+
 def test_readiness_reports_database_failure(
     client: TestClient,
     monkeypatch: pytest.MonkeyPatch,

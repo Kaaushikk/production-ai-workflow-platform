@@ -26,6 +26,8 @@ class Settings(BaseSettings):
     redis_url: str = ""
     rate_limit_requests: int = Field(default=60, ge=1, le=10000)
     rate_limit_window_seconds: int = Field(default=60, ge=1, le=3600)
+    otel_enabled: bool = False
+    otel_exporter_endpoint: str = "http://localhost:4318"
 
 
 @lru_cache

@@ -10,6 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from platform_api.config import get_settings
 from platform_api.database import build_engine, build_session_factory, check_database
 from platform_api.logging import configure_logging
+from platform_api.observability import configure_observability
 from platform_api.rate_limit import RateLimiter, build_rate_limiter
 from platform_api.routes.agent import router as agent_router
 from platform_api.routes.documents import router as documents_router
@@ -52,6 +53,7 @@ def create_app(
     app.state.engine = engine
     app.state.session_factory = build_session_factory(engine)
     app.state.rate_limiter = rate_limiter
+    configure_observability(app, settings, engine)
     app.include_router(agent_router, prefix="/v1")
     app.include_router(documents_router, prefix="/v1")
     app.include_router(query_router, prefix="/v1")

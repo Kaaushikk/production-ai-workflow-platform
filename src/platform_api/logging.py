@@ -3,6 +3,8 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
+from opentelemetry import trace
+
 
 class JsonFormatter(logging.Formatter):
     """Small JSON formatter that keeps logs machine-readable from Phase 1."""
@@ -16,6 +18,10 @@ class JsonFormatter(logging.Formatter):
         }
         if record.exc_info:
             payload["exception"] = self.formatException(record.exc_info)
+        span_context = trace.get_current_span().get_span_context()
+        if span_context.is_valid:
+            payload["trace_id"] = format(span_context.trace_id, "032x")
+            payload["span_id"] = format(span_context.span_id, "016x")
         return json.dumps(payload, ensure_ascii=False)
 
 

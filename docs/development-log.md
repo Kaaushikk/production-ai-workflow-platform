@@ -274,3 +274,20 @@ The six-case curated dataset measured 1.0 on every configured metric. This is a 
 
 The evaluation threshold check passes, all 44 automated tests pass, linting and strict type checking pass, and measured API/inference coverage is 88%.
 
+## 2026-09-30 Phase 10 observability stack
+
+### Work completed
+
+1. Added normalized HTTP request counters and latency histograms through the Prometheus client.
+2. Added a schema-hidden `/metrics` endpoint for Prometheus scraping.
+3. Instrumented FastAPI and SQLAlchemy with OpenTelemetry when tracing is enabled.
+4. Added OTLP/HTTP export to an OpenTelemetry Collector and forwarding to Tempo.
+5. Added active trace and span IDs to structured JSON logs.
+6. Added Prometheus, Grafana, Tempo, and collector services with persistent development volumes.
+7. Provisioned Prometheus and Tempo Grafana data sources and a dashboard for request rate, p95 latency, and 5xx rate.
+8. Added tests for metric exposure and trace-log correlation.
+
+### Verification result
+
+All 46 tests pass locally, linting and strict type checking pass, and measured API/inference coverage is 88%. The complete observability stack will be started by the Linux Compose CI check after the remaining phases are pushed.
+

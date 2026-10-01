@@ -182,6 +182,10 @@ The deterministic regression suite covers supported answers, abstention, citatio
 
 The committed six-case dataset currently passes every configured threshold. These results validate a small, curated offline regression set; they do not measure general-domain quality or real customer data. The report records the dataset SHA-256 hash so a result cannot be separated from the exact cases used to produce it. See [the evaluation guide](docs/evaluation.md).
 
+## Phase 10 observability
+
+The API exposes Prometheus request counters and latency histograms at `/metrics`. FastAPI requests and SQLAlchemy calls emit OpenTelemetry traces through the collector to Tempo, and JSON logs include active trace and span IDs. Grafana starts with Prometheus and Tempo data sources plus a provisioned overview dashboard for request rate, p95 latency, and 5xx responses. See [the observability guide](docs/observability.md).
+
 ## Configuration
 
 All settings use the `APP_` prefix. Copy `.env.example` for local development and never commit real credentials. Docker Compose supplies its own database hostname because containers reach PostgreSQL by service name, while the default application setting uses `localhost` for a directly run API.
@@ -204,8 +208,8 @@ All settings use the `APP_` prefix. Copy `.env.example` for local development an
 7. Kafka worker — complete baseline
 8. Transactional outbox and Redis reliability features — complete baseline
 9. Evaluation framework — complete baseline
-10. OpenTelemetry, Prometheus, and Grafana — next
-11. CI and load testing
+10. OpenTelemetry, Prometheus, and Grafana — complete baseline
+11. CI, load, recovery, and security testing — next
 12. Cloud deployment
 
 Performance numbers and resume claims will be added only after reproducible measurement.
