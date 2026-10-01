@@ -186,6 +186,10 @@ The committed six-case dataset currently passes every configured threshold. Thes
 
 The API exposes Prometheus request counters and latency histograms at `/metrics`. FastAPI requests and SQLAlchemy calls emit OpenTelemetry traces through the collector to Tempo, and JSON logs include active trace and span IDs. Grafana starts with Prometheus and Tempo data sources plus a provisioned overview dashboard for request rate, p95 latency, and 5xx responses. See [the observability guide](docs/observability.md).
 
+## Phase 11 validation
+
+The main CI workflow now starts the complete stack and executes an end-to-end smoke path through authentication, upload, grounded queries, the transactional outbox, Kafka, and the idempotent consumer. Security regression tests cover response headers and secret-free metrics alongside the existing tenant, validation, prompt-injection, and tool-authorization tests. A manual Locust workflow provides a reproducible workload without publishing hardware-independent performance claims. See [the testing guide](docs/testing.md) and [security policy](SECURITY.md).
+
 ## Configuration
 
 All settings use the `APP_` prefix. Copy `.env.example` for local development and never commit real credentials. Docker Compose supplies its own database hostname because containers reach PostgreSQL by service name, while the default application setting uses `localhost` for a directly run API.
@@ -209,7 +213,7 @@ All settings use the `APP_` prefix. Copy `.env.example` for local development an
 8. Transactional outbox and Redis reliability features — complete baseline
 9. Evaluation framework — complete baseline
 10. OpenTelemetry, Prometheus, and Grafana — complete baseline
-11. CI, load, recovery, and security testing — next
-12. Cloud deployment
+11. CI, load, recovery, and security testing — complete baseline
+12. Cloud deployment and portfolio release — next
 
 Performance numbers and resume claims will be added only after reproducible measurement.

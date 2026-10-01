@@ -93,3 +93,20 @@ def test_outbox_event_rolls_back_with_its_domain_transaction() -> None:
         )
         session.rollback()
         assert session.scalar(select(OutboxEvent)) is None
+
+
+def test_failed_delivery_recovers_without_changing_event_identity() -> None:
+    engine, _ = create_outbox_database()
+    now = datetime.now(UTC)
+    with Session(engine) as session:
+        dispatch_batch(session, RecordingPublisher(fail=True), now=now)
+        stored = session.scalar(select(OutboxEvent))
+        assert stored is not None
+        event_id = stored.id
+
+    publisher = RecordingPublisher()
+    with Session(engine) as session:
+        result = dispatch_batch(session, publisher, now=now + retry_delay(1))
+
+    assert result == (1, 0)
+    assert publisher.events[0].event_id == event_id

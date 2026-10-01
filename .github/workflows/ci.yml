@@ -53,6 +53,13 @@ jobs:
       - name: Start and verify the complete stack
         run: docker compose up --detach --no-build --wait --wait-timeout 180
 
+      - name: Run API and event-pipeline smoke test
+        env:
+          SMOKE_API_KEY: pai_ci_smoke_key_1234567890
+        run: |
+          docker compose exec -T -e SMOKE_API_KEY="$SMOKE_API_KEY" api python scripts/seed_smoke_tenant.py
+          docker compose exec -T -e SMOKE_API_KEY="$SMOKE_API_KEY" api python scripts/smoke_stack.py
+
       - name: Show stack diagnostics after a failure
         if: failure()
         run: docker compose logs --no-color

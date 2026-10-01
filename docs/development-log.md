@@ -291,3 +291,23 @@ The evaluation threshold check passes, all 44 automated tests pass, linting and 
 
 All 46 tests pass locally, linting and strict type checking pass, and measured API/inference coverage is 88%. The complete observability stack will be started by the Linux Compose CI check after the remaining phases are pushed.
 
+## 2026-09-30 Phase 11 load, recovery, and security validation
+
+### Work completed
+
+1. Added a full-stack CI smoke test that creates a tenant, uploads evidence, sends eight concurrent grounded queries, and waits for nine outbox events to reach the idempotent consumer.
+2. Added a Locust workload covering grounded query, hybrid search, and health traffic with configurable users and duration.
+3. Added a manually triggered GitHub performance workflow so load runs consume resources only when requested.
+4. Added a recovery regression proving a failed delivery can succeed later with the same event ID.
+5. Added restrictive browser response headers and security regressions for those headers and secret-free metrics.
+6. Added a security policy describing implemented controls and the private reporting route.
+7. Documented how to run tests, interpret load results, and verify recovery behavior without inventing performance numbers.
+
+### Debugging record
+
+- The first lint pass found a multipart smoke-test call five characters over the line limit. It was wrapped without behavior changes.
+
+### Verification result
+
+All 49 local tests pass, linting and strict typing pass, and measured API/inference coverage is 88%. The GitHub container job will perform the first real full-stack event-pipeline smoke run after push.
+
