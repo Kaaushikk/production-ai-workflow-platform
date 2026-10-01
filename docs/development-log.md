@@ -248,3 +248,29 @@ This milestone closes the known database-to-Kafka gap and adds a shared tenant p
 
 All 43 tests pass locally. Linting and strict type checking pass across all four Python packages, measured API/inference coverage remains above the 85% gate, the migration renders successfully for PostgreSQL, and the Compose file parses with all expected services. GitHub Actions will build all four project images and start the complete Linux stack after push.
 
+GitHub Actions later passed the quality job and started the complete seven-service Linux stack successfully.
+
+## 2026-09-30 Phase 9 deterministic evaluation framework
+
+### Work completed
+
+1. Added a versioned six-case JSONL regression dataset covering supported questions, unsupported questions, retrieval ranking, citations, and a retrieved prompt-injection example.
+2. Added a deterministic runner that exercises the production hashing, hybrid-ranking, and extractive-answer implementations.
+3. Added retrieval recall at three, mean reciprocal rank, abstention accuracy, citation validity, required answer-term recall, and injection-exclusion accuracy.
+4. Added committed quality thresholds and a nonzero command exit when a metric regresses.
+5. Added a report containing the exact dataset SHA-256 hash and per-case results.
+6. Added the evaluation gate to GitHub Actions and documented its limits.
+
+### Debugging record
+
+- The first aggregate treated unsupported cases, which intentionally have no relevant document, as retrieval misses. Retrieval metrics now use only cases with a labeled relevant document, while abstention accuracy still covers every case.
+- Reinstalling the unchanged dependency set inside the restricted local environment attempted to fetch the build backend and was blocked. No new package was required; the existing editable environment already exposed the added source package, and all checks ran there successfully.
+
+### Measured result
+
+The six-case curated dataset measured 1.0 on every configured metric. This is a regression-contract result for the committed offline cases, not a claim about general or production quality.
+
+### Verification result
+
+The evaluation threshold check passes, all 44 automated tests pass, linting and strict type checking pass, and measured API/inference coverage is 88%.
+

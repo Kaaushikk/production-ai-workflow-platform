@@ -172,6 +172,16 @@ Redis enforces a configurable fixed-window request limit per authenticated tenan
 
 The outbox dispatcher selects due rows with PostgreSQL `FOR UPDATE SKIP LOCKED`, allowing multiple dispatcher replicas without processing the same pending row concurrently. Failed delivery attempts retain a short error summary and retry from one second up to a five-minute maximum delay. Successfully acknowledged rows remain as an auditable delivery record.
 
+## Phase 9 evaluation gate
+
+The deterministic regression suite covers supported answers, abstention, citation validity, prompt-injection exclusion, retrieval recall, reciprocal rank, and required answer terms. Run it with:
+
+```powershell
+.\.venv\Scripts\python.exe -m evaluation.runner --check
+```
+
+The committed six-case dataset currently passes every configured threshold. These results validate a small, curated offline regression set; they do not measure general-domain quality or real customer data. The report records the dataset SHA-256 hash so a result cannot be separated from the exact cases used to produce it. See [the evaluation guide](docs/evaluation.md).
+
 ## Configuration
 
 All settings use the `APP_` prefix. Copy `.env.example` for local development and never commit real credentials. Docker Compose supplies its own database hostname because containers reach PostgreSQL by service name, while the default application setting uses `localhost` for a directly run API.
@@ -193,8 +203,8 @@ All settings use the `APP_` prefix. Copy `.env.example` for local development an
 6. PyTorch model training and inference service — complete
 7. Kafka worker — complete baseline
 8. Transactional outbox and Redis reliability features — complete baseline
-9. Evaluation framework — next
-10. OpenTelemetry, Prometheus, and Grafana
+9. Evaluation framework — complete baseline
+10. OpenTelemetry, Prometheus, and Grafana — next
 11. CI and load testing
 12. Cloud deployment
 

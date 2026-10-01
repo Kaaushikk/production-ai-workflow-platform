@@ -1,0 +1,8 @@
+{
+  "retrieval_recall_at_3": 1.0,
+  "mean_reciprocal_rank": 0.9,
+  "abstention_accuracy": 1.0,
+  "citation_validity": 1.0,
+  "answer_term_recall": 1.0,
+  "injection_exclusion_accuracy": 1.0
+}

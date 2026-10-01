@@ -35,6 +35,9 @@ jobs:
           pytest --cov=platform_api --cov=inference_service
           --cov-report=term-missing --cov-fail-under=85
 
+      - name: Run AI regression evaluation
+        run: python -m evaluation.runner --check
+
   container:
     runs-on: ubuntu-latest
     steps:
