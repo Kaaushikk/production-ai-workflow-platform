@@ -1,65 +1,32 @@
 # Production AI Workflow and ML Serving Platform
 
-A portfolio project for building and evaluating a multi-tenant AI application with grounded retrieval, controlled tools, asynchronous processing, and a separately served ML model. The repository is being implemented in runnable phases; only verified features are described as complete.
+A deployment-ready portfolio implementation of a multi-tenant AI application with grounded retrieval, controlled tools, reliable asynchronous processing, observability, evaluation, and a separately served ML model. Only locally or remotely verified behavior is described as complete.
 
 ## Current status
 
-Phases 1 through 8 are implemented: the API and storage foundation, tenant-scoped AI workflows, bounded tools, a trained PyTorch anomaly model, Kafka processing, a transactional outbox, and Redis-backed rate limiting. See [the development log](docs/development-log.md) for the running implementation record.
+All twelve planned phases are implemented as a production-style baseline. The repository includes cloud deployment manifests and release automation; creating a live cloud environment still requires provider, region, DNS, secrets, and billing choices. See [the development log](docs/development-log.md) for the implementation record.
 
 ## Repository tree
 
 ```text
 .
-|-- docs/
-|   |-- architecture.md
-|   `-- development-log.md
-|-- src/platform_api/
-|   |-- routes/documents.py
-|   |-- routes/query.py
-|   |-- routes/agent.py
-|   |-- agent.py
-|   |-- auth.py
-|   |-- answers.py
-|   |-- config.py
-|   |-- database.py
-|   |-- dependencies.py
-|   |-- embeddings.py
-|   |-- ingestion.py
-|   |-- logging.py
-|   |-- main.py
-|   |-- models.py
-|   |-- retrieval.py
-|   |-- search_service.py
-|   |-- tools.py
-|   `-- schemas.py
-|-- src/inference_service/
-|   |-- data.py
-|   |-- model.py
-|   |-- training.py
-|   `-- main.py
-|-- src/event_worker/
-|   |-- handler.py
-|   `-- main.py
-|-- src/outbox_dispatcher/
-|   |-- dispatcher.py
-|   `-- main.py
-|-- artifacts/
-|   |-- anomaly-autoencoder-v1.pt
-|   |-- anomaly-autoencoder-v1-metrics.json
-|   `-- manifest.json
-|-- migrations/versions/0001_tenants_and_ingestion.py
-|-- scripts/seed_tenants.py
-|-- tests/
-|   |-- integration/test_system_routes.py
-|   `-- unit/
-|       |-- test_config.py
-|       `-- test_logging.py
-|-- .github/workflows/ci.yml
-|-- .env.example
-|-- .gitignore
-|-- Dockerfile
-|-- Dockerfile.dispatcher
-|-- Dockerfile.worker
+|-- src/
+|   |-- platform_api/
+|   |-- inference_service/
+|   |-- event_worker/
+|   |-- outbox_dispatcher/
+|   `-- evaluation/
+|-- tests/{unit,integration,security}/
+|-- evals/                 versioned AI regression cases and thresholds
+|-- artifacts/             model and evaluation artifacts
+|-- migrations/            Alembic schema history
+|-- observability/         Prometheus, Tempo, collector, and Grafana config
+|-- deploy/kubernetes/     provider-neutral cloud workload manifests
+|-- load/                  Locust workload
+|-- scripts/               seed and full-stack smoke utilities
+|-- docs/                  architecture, operations, demo, and portfolio guides
+|-- .github/workflows/     CI, manual performance, and tagged releases
+|-- Dockerfile*
 |-- docker-compose.yml
 `-- pyproject.toml
 ```
@@ -190,6 +157,10 @@ The API exposes Prometheus request counters and latency histograms at `/metrics`
 
 The main CI workflow now starts the complete stack and executes an end-to-end smoke path through authentication, upload, grounded queries, the transactional outbox, Kafka, and the idempotent consumer. Security regression tests cover response headers and secret-free metrics alongside the existing tenant, validation, prompt-injection, and tool-authorization tests. A manual Locust workflow provides a reproducible workload without publishing hardware-independent performance claims. See [the testing guide](docs/testing.md) and [security policy](SECURITY.md).
 
+## Phase 12 deployment and release
+
+Version tags can publish four container images to GitHub Container Registry. Provider-neutral Kubernetes resources deploy redundant API, inference, worker, and dispatcher workloads against managed PostgreSQL, Kafka, Redis, and OTLP endpoints, with an explicit migration job and API autoscaling. See the [deployment guide](docs/deployment.md), [operations runbook](docs/runbook.md), [demo walkthrough](docs/demo.md), and [portfolio notes](docs/portfolio.md).
+
 ## Configuration
 
 All settings use the `APP_` prefix. Copy `.env.example` for local development and never commit real credentials. Docker Compose supplies its own database hostname because containers reach PostgreSQL by service name, while the default application setting uses `localhost` for a directly run API.
@@ -214,6 +185,6 @@ All settings use the `APP_` prefix. Copy `.env.example` for local development an
 9. Evaluation framework — complete baseline
 10. OpenTelemetry, Prometheus, and Grafana — complete baseline
 11. CI, load, recovery, and security testing — complete baseline
-12. Cloud deployment and portfolio release — next
+12. Cloud deployment and portfolio release — deployment-ready baseline
 
-Performance numbers and resume claims will be added only after reproducible measurement.
+The planned implementation is complete. A live cloud rollout remains environment-specific and should happen only after provider, cost, domain, and secret-management decisions are made.

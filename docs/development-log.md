@@ -311,3 +311,22 @@ All 46 tests pass locally, linting and strict type checking pass, and measured A
 
 All 49 local tests pass, linting and strict typing pass, and measured API/inference coverage is 88%. The GitHub container job will perform the first real full-stack event-pipeline smoke run after push.
 
+## 2026-09-30 Phase 12 deployment and portfolio release
+
+### Work completed
+
+1. Added tag-driven GitHub Container Registry publication for the API, inference service, event worker, and outbox dispatcher.
+2. Added provider-neutral Kubernetes resources with non-root containers, read-only filesystems, resource requests and limits, health probes, two replicas, an API horizontal autoscaler, and a separate migration job.
+3. Kept PostgreSQL/pgvector, Kafka, Redis, and OTLP as managed cloud dependencies rather than presenting development-grade stateful manifests as production infrastructure.
+4. Added deployment prerequisites and an ordered rollout procedure that keeps populated secrets outside the repository.
+5. Added an incident runbook, a ten-minute demo walkthrough, and scope-safe resume and interview talking points.
+6. Updated the current architecture and project status while preserving explicit limitations and unmeasured claims.
+
+### Deployment boundary
+
+The code and manifests are deployment ready. No live cloud resources were created because the cloud provider, region, domain, service sizes, secret manager, and billing authorization have not been selected. The release workflow publishes images only when manually run or when the repository owner creates a version tag.
+
+### Verification result
+
+All 49 tests pass with 88% measured API/inference coverage. Linting, strict typing, the six-case AI evaluation gate, the complete PostgreSQL migration chain, 17 deployment/workflow/observability YAML files, and the Grafana dashboard JSON all validate locally. GitHub Actions remains the authoritative Linux container and full-stack smoke check.
+

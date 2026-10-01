@@ -1,5 +1,23 @@
 # Phase 1 architecture
 
+## Current system
+
+```text
+Client -> FastAPI API -> PostgreSQL + pgvector
+             |               |
+             |               `-> transactional outbox
+             |                         |
+             |                         v
+             |                  Kafka <- dispatcher
+             |                         |
+             |                         v
+             |                 idempotent worker
+             |
+             |-> Redis rate limits
+             |-> dedicated PyTorch inference service
+             `-> Prometheus metrics + OTLP traces -> Tempo/Grafana
+```
+
 The first phase establishes the smallest dependable platform boundary: an HTTP API and a PostgreSQL database. Later phases will add domain models, background processing, retrieval, model serving, and observability without putting those responsibilities inside route functions.
 
 ```text

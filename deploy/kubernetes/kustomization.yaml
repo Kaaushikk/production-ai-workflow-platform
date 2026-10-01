@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - migration-job.yaml
+  - api.yaml
+  - inference.yaml
+  - workers.yaml
+  - autoscaling.yaml

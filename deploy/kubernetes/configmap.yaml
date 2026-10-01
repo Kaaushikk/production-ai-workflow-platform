@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: platform-config
+  namespace: ai-platform
+data:
+  APP_ENV: production
+  APP_LOG_LEVEL: INFO
+  APP_KAFKA_TOPIC: platform.events
+  APP_RATE_LIMIT_REQUESTS: "60"
+  APP_RATE_LIMIT_WINDOW_SECONDS: "60"
+  APP_OTEL_ENABLED: "true"
+  MODEL_ARTIFACT_PATH: artifacts/anomaly-autoencoder-v1.pt
+  EVENT_WORKER_GROUP_ID: platform-event-worker-v1
+  EVENT_WORKER_DLQ_TOPIC: platform.events.dlq
+  OUTBOX_BATCH_SIZE: "50"
+  OUTBOX_POLL_SECONDS: "1"
