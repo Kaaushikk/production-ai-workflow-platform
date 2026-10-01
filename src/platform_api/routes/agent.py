@@ -5,7 +5,8 @@ from fastapi import APIRouter, HTTPException, status
 
 from platform_api.agent import plan_tool
 from platform_api.auth import TenantDep
-from platform_api.dependencies import SessionDep
+from platform_api.dependencies import PublisherDep, SessionDep
+from platform_api.events import EventEnvelope, EventType, publish_safely
 from platform_api.models import ToolCallRecord
 from platform_api.schemas import AgentRequest, AgentResponse
 from platform_api.tools import ToolContext, ToolError, default_tool_registry
@@ -18,6 +19,7 @@ def run_agent(
     request: AgentRequest,
     tenant: TenantDep,
     session: SessionDep,
+    publisher: PublisherDep,
 ) -> AgentResponse:
     started = perf_counter()
     plan = plan_tool(request.task)
@@ -43,6 +45,19 @@ def run_agent(
             )
         )
         session.commit()
+        publish_safely(
+            publisher,
+            EventEnvelope(
+                event_type=EventType.TOOL_CALLED,
+                tenant_id=tenant.id,
+                payload={
+                    "run_id": str(run_id),
+                    "tool_name": plan.tool_name,
+                    "success": False,
+                    "latency_ms": latency_ms,
+                },
+            ),
+        )
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
         ) from exc
@@ -60,6 +75,19 @@ def run_agent(
         )
     )
     session.commit()
+    publish_safely(
+        publisher,
+        EventEnvelope(
+            event_type=EventType.TOOL_CALLED,
+            tenant_id=tenant.id,
+            payload={
+                "run_id": str(run_id),
+                "tool_name": plan.tool_name,
+                "success": True,
+                "latency_ms": latency_ms,
+            },
+        ),
+    )
     return AgentResponse(
         run_id=run_id,
         tool_name=plan.tool_name,

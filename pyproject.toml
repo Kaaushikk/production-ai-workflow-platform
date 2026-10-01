@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
   "alembic>=1.14,<2.0",
+  "confluent-kafka>=2.6,<3.0",
   "fastapi>=0.115,<1.0",
   "pgvector>=0.3,<1.0",
   "pypdf>=5.1,<6.0",
@@ -34,7 +35,7 @@ ml = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/platform_api", "src/inference_service"]
+packages = ["src/platform_api", "src/inference_service", "src/event_worker"]
 
 [tool.pytest.ini_options]
 addopts = "-q --strict-markers --disable-warnings"
@@ -50,7 +51,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-packages = ["platform_api", "inference_service"]
+packages = ["platform_api", "inference_service", "event_worker"]
 
 [[tool.mypy.overrides]]
 module = ["numpy", "numpy.*", "torch", "torch.*"]

@@ -4,7 +4,7 @@ A portfolio project for building and evaluating a multi-tenant AI application wi
 
 ## Current status
 
-Phases 1 through 6 are implemented: the API and storage foundation, tenant-scoped AI workflows, bounded tools, and a trained PyTorch anomaly model served by a dedicated inference service. See [the development log](docs/development-log.md) for the running implementation record.
+Phases 1 through 7 are implemented: the API and storage foundation, tenant-scoped AI workflows, bounded tools, a trained PyTorch anomaly model, and Kafka-based asynchronous event processing. See [the development log](docs/development-log.md) for the running implementation record.
 
 ## Repository tree
 
@@ -37,6 +37,9 @@ Phases 1 through 6 are implemented: the API and storage foundation, tenant-scope
 |   |-- model.py
 |   |-- training.py
 |   `-- main.py
+|-- src/event_worker/
+|   |-- handler.py
+|   `-- main.py
 |-- artifacts/
 |   |-- anomaly-autoencoder-v1.pt
 |   |-- anomaly-autoencoder-v1-metrics.json
@@ -52,6 +55,7 @@ Phases 1 through 6 are implemented: the API and storage foundation, tenant-scope
 |-- .env.example
 |-- .gitignore
 |-- Dockerfile
+|-- Dockerfile.worker
 |-- docker-compose.yml
 `-- pyproject.toml
 ```
@@ -104,13 +108,13 @@ Python 3.11 or newer is required.
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,ml]"
 ruff check .
 mypy src
-pytest --cov=platform_api --cov-report=term-missing
+pytest --cov=platform_api --cov=inference_service --cov-report=term-missing
 ```
 
-The readiness success path needs PostgreSQL. Phase 1's automated test uses a controlled dependency failure to verify the `503` response without requiring a database in the unit-test process. Container startup verifies the real database connection.
+The readiness success path needs PostgreSQL. Automated tests use controlled dependencies and an isolated database; container startup verifies the real service connections.
 
 ## Phase 2 behavior
 
@@ -150,6 +154,14 @@ The committed report is tied to model version `anomaly-autoencoder-v1`, seed 42,
 
 The separate inference service loads the artifact once at startup, validates batches of up to 100 rows, and returns anomaly scores, threshold decisions, and the exact model version. The artifact manifest records SHA-256 hashes for provenance.
 
+## Phase 7 asynchronous events
+
+Successful document ingestion, grounded queries, and tool calls publish versioned events to the `platform.events` Kafka topic. Every envelope contains a unique event ID, tenant ID, UTC timestamp, schema version, event type, and typed-by-convention payload. The API uses the tenant ID as the Kafka key so events for one tenant retain partition order.
+
+The separate event worker disables automatic offset commits. It stores each handled event ID in PostgreSQL, then commits the Kafka offset. Redelivery is therefore safe for the implemented database-side handler: an event already recorded in `processed_events` is skipped. Invalid envelopes go to `platform.events.dlq` with source coordinates and validation details.
+
+The API database commit and Kafka publish are currently separate operations. A broker failure after a successful API commit can leave that operation without an event. The next reliability phase will add a transactional outbox so committed work can be retried until published. No end-to-end delivery guarantee is claimed before that change.
+
 ## Configuration
 
 All settings use the `APP_` prefix. Copy `.env.example` for local development and never commit real credentials. Docker Compose supplies its own database hostname because containers reach PostgreSQL by service name, while the default application setting uses `localhost` for a directly run API.
@@ -169,8 +181,8 @@ All settings use the `APP_` prefix. Copy `.env.example` for local development an
 4. Hybrid RAG with citations — complete baseline
 5. Safe tools and bounded agent behavior — complete baseline
 6. PyTorch model training and inference service — complete
-7. Kafka worker — next
-8. Redis reliability features
+7. Kafka worker — complete baseline
+8. Transactional outbox and Redis reliability features — next
 9. Evaluation framework
 10. OpenTelemetry, Prometheus, and Grafana
 11. CI and load testing

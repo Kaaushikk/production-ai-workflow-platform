@@ -21,6 +21,8 @@ class Settings(BaseSettings):
     api_port: int = Field(default=8000, ge=1, le=65535)
     database_url: str = "postgresql+psycopg://platform:platform@localhost:5432/platform"
     database_connect_timeout_seconds: int = Field(default=3, ge=1, le=30)
+    kafka_bootstrap_servers: str = ""
+    kafka_topic: str = "platform.events"
 
 
 @lru_cache

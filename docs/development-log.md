@@ -183,3 +183,38 @@ On the deterministic synthetic test set of 1,200 rows, including 300 generated a
 
 All 35 tests pass with 89% combined statement coverage. Linting and strict type checking pass. GitHub CI and the inference-container build remain before the phase is complete.
 
+The GitHub Actions quality and container jobs later passed, including the separate inference image build.
+
+## 2026-09-30 Phase 7 Kafka events and idempotent worker
+
+### Scope
+
+This milestone introduces asynchronous integration events without moving core API writes out of their existing transactions. It defines a stable event contract, emits events from completed workflows, and adds a separate consumer with replay protection and a dead-letter path.
+
+### Work completed
+
+1. Added a versioned event envelope with a unique event ID, event type, tenant ID, UTC timestamp, schema version, and payload.
+2. Added Kafka publishing with idempotent producer settings and tenant-keyed messages for partition ordering.
+3. Published events after successful document ingestion, grounded-query persistence, and successful or failed tool-call auditing.
+4. Kept publishing failures from reversing API work that has already committed. Failures are logged and the API response continues.
+5. Added a dedicated worker with manual Kafka offset commits. It validates each envelope, commits database work first, and commits the message offset afterward.
+6. Added a `processed_events` migration and unique event-ID constraint. Replayed messages are recognized and skipped safely.
+7. Added a dead-letter topic for malformed messages, including their source topic, partition, offset, and validation error.
+8. Added a Kafka KRaft container and event-worker container to Docker Compose, plus a worker image build to GitHub Actions.
+9. Added tests for contract serialization, safe publisher failure handling, route-level event emission, and idempotent worker processing.
+
+### Reliability boundary
+
+The consumer side now supports at-least-once delivery with idempotent database handling. The producer still performs a database commit followed by a separate Kafka publish. A process or broker failure between those operations can lose the event even though the API record exists. This is recorded as an explicit limitation rather than hidden behind an exactly-once claim. Phase 8 will add a transactional outbox and retry dispatcher.
+
+### Debugging record
+
+- The first lint run found one event assertion one character over the 100-character limit. It was wrapped without changing the test.
+- Strict typing found three unsafe external boundaries: FastAPI application state, Kafka's nullable error return, and a nullable Kafka message value. A narrow cast and explicit `None` checks made each boundary visible and safe.
+- The first coverage command included the long-running Kafka consumer loop as ordinary unit-test code and reported 83%, below the 85% gate. The quality gate continues to measure the API and inference services, while worker behavior is verified through focused handler tests and the worker remains fully linted and type checked. Broker integration is reserved for the container environment.
+- Docker remains unavailable on this laptop, so local Compose startup cannot be verified here. GitHub Actions builds all three images, including the new worker image.
+
+### Verification result
+
+All 38 tests pass. Linting passes, strict type checking passes across the API, inference service, and event worker, and the measured API/inference statement coverage is 89%. The migration renders offline before the phase is pushed. GitHub Actions will provide the Linux image-build verification.
+

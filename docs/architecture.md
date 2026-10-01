@@ -47,3 +47,27 @@ The raw API key is never persisted. Every read path combines the requested ident
 
 Ingestion remains synchronous in Phase 2. This keeps failure and transaction behavior observable while the schema is new. When Kafka is introduced, the same ingestion job will become the durable state record and the worker will make state transitions outside the request.
 
+## Phase 7 event flow
+
+```text
+API request
+  |-- commit domain record to PostgreSQL
+  `-- publish versioned envelope to platform.events
+                |
+                v
+            Kafka (KRaft)
+                |
+                v
+       event worker, manual offset commit
+          |-- validate envelope
+          |-- insert unique processed_events receipt
+          |-- commit database transaction
+          `-- commit Kafka offset
+
+Invalid envelope -> platform.events.dlq
+```
+
+Kafka provides at-least-once delivery to the consumer. The worker uses the event ID as an idempotency key and commits its offset only after the database transaction succeeds. Tenant ID is the message key so a tenant's events preserve ordering within a partition.
+
+The producer is deliberately best-effort in this milestone: API work that has already committed does not become a failed client request if Kafka is unavailable. This creates a known dual-write gap between PostgreSQL and Kafka. A transactional outbox in the next reliability phase will close that gap by recording domain work and an unpublished event in one database transaction.
+

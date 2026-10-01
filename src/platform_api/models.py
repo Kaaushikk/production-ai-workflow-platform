@@ -139,3 +139,21 @@ class ToolCallRecord(Base):
     latency_ms: Mapped[int]
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
 
+
+class ProcessedEvent(Base):
+    """Durable receipt used to make event handling idempotent."""
+
+    __tablename__ = "processed_events"
+    __table_args__ = (
+        UniqueConstraint("event_id", name="uq_processed_events_event_id"),
+        Index("ix_processed_events_tenant_processed", "tenant_id", "processed_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    event_id: Mapped[uuid.UUID] = mapped_column()
+    tenant_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tenants.id", ondelete="CASCADE"))
+    event_type: Mapped[str] = mapped_column(String(100))
+    schema_version: Mapped[int]
+    payload_json: Mapped[dict[str, Any]] = mapped_column(JSON)
+    processed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now)
+

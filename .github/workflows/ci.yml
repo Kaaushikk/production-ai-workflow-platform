@@ -47,3 +47,6 @@ jobs:
       - name: Build inference image
         run: docker build --file Dockerfile.inference --tag anomaly-inference:ci .
 
+      - name: Build event worker image
+        run: docker build --file Dockerfile.worker --tag platform-event-worker:ci .
+

@@ -6,8 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
 from platform_api.auth import TenantDep
-from platform_api.dependencies import SessionDep
+from platform_api.dependencies import PublisherDep, SessionDep
 from platform_api.embeddings import default_embedding_provider
+from platform_api.events import EventEnvelope, EventType, publish_safely
 from platform_api.ingestion import IngestionError, chunk_text, parse_document
 from platform_api.models import Document, DocumentChunk, IngestionJob, IngestionStatus, utc_now
 from platform_api.schemas import DocumentResponse, JobResponse
@@ -20,6 +21,7 @@ async def upload_document(
     file: Annotated[UploadFile, File()],
     tenant: TenantDep,
     session: SessionDep,
+    publisher: PublisherDep,
     title: Annotated[str | None, Form(max_length=300)] = None,
 ) -> DocumentResponse:
     filename = file.filename or "upload"
@@ -81,6 +83,18 @@ async def upload_document(
             raise exc
         return DocumentResponse.from_model(duplicate, duplicate=True)
     session.refresh(document)
+    publish_safely(
+        publisher,
+        EventEnvelope(
+            event_type=EventType.DOCUMENT_INGESTED,
+            tenant_id=tenant.id,
+            payload={
+                "document_id": str(document.id),
+                "job_id": str(job.id),
+                "chunk_count": len(document.chunks),
+            },
+        ),
+    )
     return DocumentResponse.from_model(document)
 
 
