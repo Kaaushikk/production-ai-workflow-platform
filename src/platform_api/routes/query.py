@@ -4,9 +4,10 @@ from fastapi import APIRouter
 
 from platform_api.answers import default_answer_provider
 from platform_api.auth import TenantDep
-from platform_api.dependencies import PublisherDep, SessionDep
-from platform_api.events import EventEnvelope, EventType, publish_safely
+from platform_api.dependencies import SessionDep
+from platform_api.events import EventEnvelope, EventType, enqueue_event
 from platform_api.models import QueryRecord
+from platform_api.rate_limit import RateLimitDep
 from platform_api.schemas import Citation, QueryRequest, QueryResponse
 from platform_api.search_service import retrieve_chunks
 
@@ -18,7 +19,7 @@ def answer_query(
     request: QueryRequest,
     tenant: TenantDep,
     session: SessionDep,
-    publisher: PublisherDep,
+    _rate_limit: RateLimitDep,
 ) -> QueryResponse:
     started = perf_counter()
     evidence = retrieve_chunks(session, tenant.id, request.question, request.retrieval_limit)
@@ -45,10 +46,9 @@ def answer_query(
         latency_ms=latency_ms,
     )
     session.add(record)
-    session.commit()
-    session.refresh(record)
-    publish_safely(
-        publisher,
+    session.flush()
+    enqueue_event(
+        session,
         EventEnvelope(
             event_type=EventType.QUERY_COMPLETED,
             tenant_id=tenant.id,
@@ -60,6 +60,8 @@ def answer_query(
             },
         ),
     )
+    session.commit()
+    session.refresh(record)
     return QueryResponse(
         query_id=record.id,
         answer=generated.text,

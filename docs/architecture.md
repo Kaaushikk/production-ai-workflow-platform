@@ -69,5 +69,29 @@ Invalid envelope -> platform.events.dlq
 
 Kafka provides at-least-once delivery to the consumer. The worker uses the event ID as an idempotency key and commits its offset only after the database transaction succeeds. Tenant ID is the message key so a tenant's events preserve ordering within a partition.
 
-The producer is deliberately best-effort in this milestone: API work that has already committed does not become a failed client request if Kafka is unavailable. This creates a known dual-write gap between PostgreSQL and Kafka. A transactional outbox in the next reliability phase will close that gap by recording domain work and an unpublished event in one database transaction.
+Phase 7 initially used a best-effort publish after the API database commit. Phase 8 replaces that dual write with the transactional outbox below.
+
+## Phase 8 reliability flow
+
+```text
+Authenticated request
+  |-- Redis tenant rate limit
+  `-- one PostgreSQL transaction
+        |-- domain record
+        `-- outbox event
+                 |
+                 v
+       outbox dispatcher
+        |-- lock due rows with SKIP LOCKED
+        |-- wait for Kafka acknowledgement
+        |-- mark published, or
+        `-- schedule bounded retry
+                 |
+                 v
+       existing idempotent consumer
+```
+
+The database commit now makes the domain change and the intent to publish atomic. Kafka delivery remains at least once: if Kafka acknowledges a message and the dispatcher cannot commit `published_at`, the row is sent again. The consumer's unique event-ID receipt makes that replay safe for the implemented handler.
+
+Redis rate limits expensive or mutating tenant routes with an atomic increment-and-expire script. The API fails open and logs the dependency error if Redis is unavailable. This favors service continuity; deployments that need strict abuse prevention can change that policy later.
 

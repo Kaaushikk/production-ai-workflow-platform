@@ -3,6 +3,7 @@ from fastapi import APIRouter
 from platform_api.auth import TenantDep
 from platform_api.dependencies import SessionDep
 from platform_api.embeddings import default_embedding_provider
+from platform_api.rate_limit import RateLimitDep
 from platform_api.schemas import SearchRequest, SearchResponse, SearchResult
 from platform_api.search_service import retrieve_chunks
 
@@ -14,6 +15,7 @@ def search_documents(
     request: SearchRequest,
     tenant: TenantDep,
     session: SessionDep,
+    _rate_limit: RateLimitDep,
 ) -> SearchResponse:
     ranked = retrieve_chunks(session, tenant.id, request.query, request.limit)
     results = [

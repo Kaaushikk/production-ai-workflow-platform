@@ -218,3 +218,33 @@ The consumer side now supports at-least-once delivery with idempotent database h
 
 All 38 tests pass. Linting passes, strict type checking passes across the API, inference service, and event worker, and the measured API/inference statement coverage is 89%. The migration renders offline before the phase is pushed. GitHub Actions will provide the Linux image-build verification.
 
+GitHub Actions later passed both jobs, including the API, inference, event-worker, and Linux quality checks.
+
+## 2026-09-30 Phase 8 transactional outbox and Redis reliability
+
+### Scope
+
+This milestone closes the known database-to-Kafka gap and adds a shared tenant protection control. It keeps at-least-once delivery explicit and builds on the consumer idempotency introduced in Phase 7.
+
+### Work completed
+
+1. Added an `outbox_events` table containing the complete event contract, attempt state, retry schedule, delivery error, and publish timestamp.
+2. Changed document, query, and tool-call workflows to insert their outbox event inside the same transaction as the domain record.
+3. Added a separate dispatcher that locks due rows with `FOR UPDATE SKIP LOCKED`, waits for Kafka delivery confirmation, and records the result.
+4. Added bounded exponential retry from one second to five minutes. Failed rows keep their last short error for diagnosis.
+5. Preserved at-least-once semantics: if delivery succeeds but the dispatcher database commit fails, a replay uses the same event ID and the existing consumer skips duplicate work.
+6. Added Redis fixed-window rate limiting for authenticated upload, search, query, and agent requests. Limits are shared across API replicas and keyed by server-derived tenant ID.
+7. Made rate limiting fail open with structured error logging when Redis is unavailable so this optional control cannot make the core API unavailable.
+8. Added Redis persistence, health checks, an outbox-dispatcher container, configuration examples, and a fourth image build in CI.
+9. Added tests for successful dispatch, broker-failure retry state, bounded backoff, transactional rollback, Redis limit decisions, `429` responses, and Redis failure behavior.
+
+### Debugging record
+
+- The first dispatcher success test supplied a fixed noon timestamp, but the newly inserted outbox row used the actual later local time and was correctly considered not due. The test now captures the current UTC time after insertion.
+- Redis publishes combined sync and async return types in its type hints. The production code now narrows the result at the client boundary and passes the script argument as a string, while preserving strict checks elsewhere.
+- The first lint run found an unused blank import separation and a long SQLAlchemy import. Formatting was corrected without behavior changes.
+
+### Verification result
+
+All 43 tests pass locally. Linting and strict type checking pass across all four Python packages, measured API/inference coverage remains above the 85% gate, the migration renders successfully for PostgreSQL, and the Compose file parses with all expected services. GitHub Actions will build all four project images and start the complete Linux stack after push.
+

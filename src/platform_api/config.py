@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     database_connect_timeout_seconds: int = Field(default=3, ge=1, le=30)
     kafka_bootstrap_servers: str = ""
     kafka_topic: str = "platform.events"
+    redis_url: str = ""
+    rate_limit_requests: int = Field(default=60, ge=1, le=10000)
+    rate_limit_window_seconds: int = Field(default=60, ge=1, le=3600)
 
 
 @lru_cache

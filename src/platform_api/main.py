@@ -9,8 +9,8 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from platform_api.config import get_settings
 from platform_api.database import build_engine, build_session_factory, check_database
-from platform_api.events import EventPublisher, build_event_publisher
 from platform_api.logging import configure_logging
+from platform_api.rate_limit import RateLimiter, build_rate_limiter
 from platform_api.routes.agent import router as agent_router
 from platform_api.routes.documents import router as documents_router
 from platform_api.routes.query import router as query_router
@@ -23,20 +23,22 @@ logger = logging.getLogger(__name__)
 def create_app(
     *,
     engine_override: Engine | None = None,
-    publisher_override: EventPublisher | None = None,
+    rate_limiter_override: RateLimiter | None = None,
 ) -> FastAPI:
     settings = get_settings()
     configure_logging(settings.log_level)
     engine = engine_override or build_engine(settings)
-    publisher = publisher_override or build_event_publisher(
-        settings.kafka_bootstrap_servers, settings.kafka_topic
+    rate_limiter = rate_limiter_override or build_rate_limiter(
+        settings.redis_url,
+        settings.rate_limit_requests,
+        settings.rate_limit_window_seconds,
     )
 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         logger.info("application_started")
         yield
-        publisher.close()
+        rate_limiter.close()
         engine.dispose()
         logger.info("application_stopped")
 
@@ -49,7 +51,7 @@ def create_app(
     app.state.settings = settings
     app.state.engine = engine
     app.state.session_factory = build_session_factory(engine)
-    app.state.event_publisher = publisher
+    app.state.rate_limiter = rate_limiter
     app.include_router(agent_router, prefix="/v1")
     app.include_router(documents_router, prefix="/v1")
     app.include_router(query_router, prefix="/v1")

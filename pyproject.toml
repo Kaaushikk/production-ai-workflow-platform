@@ -17,6 +17,7 @@ dependencies = [
   "pydantic-settings>=2.6,<3.0",
   "psycopg[binary]>=3.2,<4.0",
   "python-multipart>=0.0.20,<1.0",
+  "redis>=5.2,<7.0",
   "sqlalchemy>=2.0,<3.0",
   "uvicorn[standard]>=0.32,<1.0",
 ]
@@ -35,7 +36,12 @@ ml = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/platform_api", "src/inference_service", "src/event_worker"]
+packages = [
+  "src/platform_api",
+  "src/inference_service",
+  "src/event_worker",
+  "src/outbox_dispatcher",
+]
 
 [tool.pytest.ini_options]
 addopts = "-q --strict-markers --disable-warnings"
@@ -51,7 +57,7 @@ select = ["E", "F", "I", "UP", "B", "SIM"]
 [tool.mypy]
 python_version = "3.12"
 strict = true
-packages = ["platform_api", "inference_service", "event_worker"]
+packages = ["platform_api", "inference_service", "event_worker", "outbox_dispatcher"]
 
 [[tool.mypy.overrides]]
 module = ["numpy", "numpy.*", "torch", "torch.*"]

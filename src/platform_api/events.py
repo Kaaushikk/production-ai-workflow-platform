@@ -6,6 +6,9 @@ from typing import Any, Protocol
 
 from confluent_kafka import Producer
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy.orm import Session
+
+from platform_api.models import OutboxEvent
 
 logger = logging.getLogger(__name__)
 
@@ -59,12 +62,23 @@ class KafkaEventPublisher:
         )
 
     def publish(self, event: EventEnvelope) -> None:
+        delivery_errors: list[str] = []
+
+        def on_delivery(error: object | None, _: object) -> None:
+            if error is not None:
+                delivery_errors.append(str(error))
+
         self._producer.produce(
             self._topic,
             key=str(event.tenant_id),
             value=event.model_dump_json(),
+            on_delivery=on_delivery,
         )
-        self._producer.poll(0)
+        remaining = self._producer.flush(10)
+        if remaining:
+            raise RuntimeError(f"Kafka delivery timed out for {remaining} event(s)")
+        if delivery_errors:
+            raise RuntimeError(f"Kafka delivery failed: {delivery_errors[0]}")
 
     def close(self) -> None:
         remaining = self._producer.flush(5)
@@ -78,15 +92,16 @@ def build_event_publisher(bootstrap_servers: str, topic: str) -> EventPublisher:
     return KafkaEventPublisher(bootstrap_servers, topic)
 
 
-def publish_safely(publisher: EventPublisher, event: EventEnvelope) -> bool:
-    """Publish without failing an API operation that already committed to the database."""
+def enqueue_event(session: Session, event: EventEnvelope) -> None:
+    """Add an event to the current database transaction."""
 
-    try:
-        publisher.publish(event)
-    except Exception:
-        logger.exception(
-            "event_publish_failed",
-            extra={"event_id": str(event.event_id), "event_type": event.event_type},
+    session.add(
+        OutboxEvent(
+            id=event.event_id,
+            tenant_id=event.tenant_id,
+            event_type=event.event_type,
+            schema_version=event.schema_version,
+            occurred_at=event.occurred_at,
+            payload_json=event.payload,
         )
-        return False
-    return True
+    )

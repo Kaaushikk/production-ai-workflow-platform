@@ -2,28 +2,17 @@ from collections.abc import Iterator
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from platform_api.auth import hash_api_key
-from platform_api.events import EventEnvelope, EventType
+from platform_api.events import EventType
 from platform_api.main import create_app
-from platform_api.models import ApiKey, Base, Tenant
+from platform_api.models import ApiKey, Base, OutboxEvent, Tenant
 
 FIN_KEY = "pai_finserve_test_key_1234567890"
 CLOUD_KEY = "pai_cloudops_test_key_1234567890"
-
-
-class RecordingPublisher:
-    def __init__(self) -> None:
-        self.events: list[EventEnvelope] = []
-
-    def publish(self, event: EventEnvelope) -> None:
-        self.events.append(event)
-
-    def close(self) -> None:
-        pass
 
 
 @pytest.fixture
@@ -50,9 +39,7 @@ def tenant_client() -> Iterator[TestClient]:
             session.add(tenant)
         session.commit()
 
-    with TestClient(
-        create_app(engine_override=engine, publisher_override=RecordingPublisher())
-    ) as client:
+    with TestClient(create_app(engine_override=engine)) as client:
         yield client
     engine.dispose()
 
@@ -73,9 +60,10 @@ def test_document_upload_creates_chunks_and_supports_idempotent_retry(
     assert duplicate.status_code == 201
     assert duplicate.json()["id"] == first.json()["id"]
     assert duplicate.json()["duplicate"] is True
-    events = tenant_client.app.state.event_publisher.events
+    with tenant_client.app.state.session_factory() as session:
+        events = session.scalars(select(OutboxEvent)).all()
     assert [event.event_type for event in events] == [EventType.DOCUMENT_INGESTED]
-    assert events[0].payload["document_id"] == first.json()["id"]
+    assert events[0].payload_json["document_id"] == first.json()["id"]
 
 
 def test_tenant_cannot_read_another_tenants_document(tenant_client: TestClient) -> None:
@@ -155,10 +143,12 @@ def test_query_returns_grounded_answer_and_valid_citation(tenant_client: TestCli
     assert response.json()["provider"] == "extractive-baseline-v1"
     assert response.json()["citations"][0]["document_id"] == uploaded.json()["id"]
     assert response.json()["answer"].endswith("[1]")
-    assert (
-        tenant_client.app.state.event_publisher.events[-1].event_type
-        == EventType.QUERY_COMPLETED
-    )
+    with tenant_client.app.state.session_factory() as session:
+        event = session.scalar(
+            select(OutboxEvent).where(OutboxEvent.event_type == EventType.QUERY_COMPLETED)
+        )
+    assert event is not None
+    assert event.payload_json["query_id"] == response.json()["query_id"]
 
 
 def test_query_abstains_when_tenant_has_no_supporting_evidence(
@@ -203,7 +193,12 @@ def test_agent_uses_allowlisted_tenant_scoped_tool(tenant_client: TestClient) ->
     assert response.json()["tool_name"] == "count_documents"
     assert response.json()["result"] == {"document_count": 1}
     assert response.json()["steps"] == 1
-    assert tenant_client.app.state.event_publisher.events[-1].event_type == EventType.TOOL_CALLED
+    with tenant_client.app.state.session_factory() as session:
+        event = session.scalar(
+            select(OutboxEvent).where(OutboxEvent.event_type == EventType.TOOL_CALLED)
+        )
+    assert event is not None
+    assert event.payload_json["run_id"] == response.json()["run_id"]
 
 
 def test_upload_requires_valid_api_key_and_supported_file(tenant_client: TestClient) -> None:

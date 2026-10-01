@@ -4,7 +4,7 @@ A portfolio project for building and evaluating a multi-tenant AI application wi
 
 ## Current status
 
-Phases 1 through 7 are implemented: the API and storage foundation, tenant-scoped AI workflows, bounded tools, a trained PyTorch anomaly model, and Kafka-based asynchronous event processing. See [the development log](docs/development-log.md) for the running implementation record.
+Phases 1 through 8 are implemented: the API and storage foundation, tenant-scoped AI workflows, bounded tools, a trained PyTorch anomaly model, Kafka processing, a transactional outbox, and Redis-backed rate limiting. See [the development log](docs/development-log.md) for the running implementation record.
 
 ## Repository tree
 
@@ -40,6 +40,9 @@ Phases 1 through 7 are implemented: the API and storage foundation, tenant-scope
 |-- src/event_worker/
 |   |-- handler.py
 |   `-- main.py
+|-- src/outbox_dispatcher/
+|   |-- dispatcher.py
+|   `-- main.py
 |-- artifacts/
 |   |-- anomaly-autoencoder-v1.pt
 |   |-- anomaly-autoencoder-v1-metrics.json
@@ -55,6 +58,7 @@ Phases 1 through 7 are implemented: the API and storage foundation, tenant-scope
 |-- .env.example
 |-- .gitignore
 |-- Dockerfile
+|-- Dockerfile.dispatcher
 |-- Dockerfile.worker
 |-- docker-compose.yml
 `-- pyproject.toml
@@ -160,7 +164,13 @@ Successful document ingestion, grounded queries, and tool calls publish versione
 
 The separate event worker disables automatic offset commits. It stores each handled event ID in PostgreSQL, then commits the Kafka offset. Redelivery is therefore safe for the implemented database-side handler: an event already recorded in `processed_events` is skipped. Invalid envelopes go to `platform.events.dlq` with source coordinates and validation details.
 
-The API database commit and Kafka publish are currently separate operations. A broker failure after a successful API commit can leave that operation without an event. The next reliability phase will add a transactional outbox so committed work can be retried until published. No end-to-end delivery guarantee is claimed before that change.
+Phase 8 replaces direct API publishing with a transactional outbox. The API stores each domain change and its event in one PostgreSQL transaction. A separate dispatcher publishes pending rows, records broker-confirmed delivery, and retries failures with bounded exponential backoff. A publish followed by a dispatcher database failure can still create a duplicate, which the consumer handles through its unique event-ID receipt.
+
+## Phase 8 reliability controls
+
+Redis enforces a configurable fixed-window request limit per authenticated tenant on document upload, search, grounded query, and agent routes. The default Compose limit is 60 requests per 60 seconds. If Redis is temporarily unreachable, requests fail open and the incident is logged so an optional protection dependency does not take down the API.
+
+The outbox dispatcher selects due rows with PostgreSQL `FOR UPDATE SKIP LOCKED`, allowing multiple dispatcher replicas without processing the same pending row concurrently. Failed delivery attempts retain a short error summary and retry from one second up to a five-minute maximum delay. Successfully acknowledged rows remain as an auditable delivery record.
 
 ## Configuration
 
@@ -182,8 +192,8 @@ All settings use the `APP_` prefix. Copy `.env.example` for local development an
 5. Safe tools and bounded agent behavior — complete baseline
 6. PyTorch model training and inference service — complete
 7. Kafka worker — complete baseline
-8. Transactional outbox and Redis reliability features — next
-9. Evaluation framework
+8. Transactional outbox and Redis reliability features — complete baseline
+9. Evaluation framework — next
 10. OpenTelemetry, Prometheus, and Grafana
 11. CI and load testing
 12. Cloud deployment

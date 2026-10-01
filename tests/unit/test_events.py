@@ -1,21 +1,7 @@
 import uuid
 from datetime import UTC, datetime
 
-from platform_api.events import EventEnvelope, EventType, publish_safely
-
-
-class RecordingPublisher:
-    def __init__(self, *, fail: bool = False) -> None:
-        self.events: list[EventEnvelope] = []
-        self.fail = fail
-
-    def publish(self, event: EventEnvelope) -> None:
-        if self.fail:
-            raise RuntimeError("broker unavailable")
-        self.events.append(event)
-
-    def close(self) -> None:
-        pass
+from platform_api.events import EventEnvelope, EventType
 
 
 def test_event_envelope_round_trips_as_versioned_json() -> None:
@@ -31,16 +17,3 @@ def test_event_envelope_round_trips_as_versioned_json() -> None:
 
     assert restored == event
     assert restored.schema_version == 1
-
-
-def test_safe_publish_reports_success_and_contains_broker_failures() -> None:
-    event = EventEnvelope(
-        event_type=EventType.DOCUMENT_INGESTED,
-        tenant_id=uuid.uuid4(),
-        payload={"document_id": "document-1"},
-    )
-    recording = RecordingPublisher()
-
-    assert publish_safely(recording, event) is True
-    assert recording.events == [event]
-    assert publish_safely(RecordingPublisher(fail=True), event) is False

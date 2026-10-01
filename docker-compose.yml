@@ -7,12 +7,15 @@ services:
       APP_DATABASE_URL: postgresql+psycopg://platform:platform@postgres:5432/platform
       APP_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       APP_KAFKA_TOPIC: platform.events
+      APP_REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
     depends_on:
       postgres:
         condition: service_healthy
       kafka:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     command:
       - sh
@@ -62,6 +65,35 @@ services:
       retries: 10
       start_period: 15s
 
+  redis:
+    image: redis:7.4-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  outbox-dispatcher:
+    build:
+      context: .
+      dockerfile: Dockerfile.dispatcher
+    environment:
+      APP_ENV: development
+      APP_DATABASE_URL: postgresql+psycopg://platform:platform@postgres:5432/platform
+      APP_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      APP_KAFKA_TOPIC: platform.events
+      OUTBOX_BATCH_SIZE: 50
+      OUTBOX_POLL_SECONDS: 1
+    depends_on:
+      api:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    restart: unless-stopped
+
   event-worker:
     build:
       context: .
@@ -97,4 +129,5 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
 
