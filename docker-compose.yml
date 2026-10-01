@@ -8,6 +8,8 @@ services:
       APP_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       APP_KAFKA_TOPIC: platform.events
       APP_REDIS_URL: redis://redis:6379/0
+      APP_RATE_LIMIT_REQUESTS: ${APP_RATE_LIMIT_REQUESTS:-60}
+      APP_RATE_LIMIT_WINDOW_SECONDS: ${APP_RATE_LIMIT_WINDOW_SECONDS:-60}
       APP_OTEL_ENABLED: "true"
       APP_OTEL_EXPORTER_ENDPOINT: http://otel-collector:4318
     ports:

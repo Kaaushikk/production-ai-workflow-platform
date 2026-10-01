@@ -330,3 +330,7 @@ The code and manifests are deployment ready. No live cloud resources were create
 
 All 49 tests pass with 88% measured API/inference coverage. Linting, strict typing, the six-case AI evaluation gate, the complete PostgreSQL migration chain, 17 deployment/workflow/observability YAML files, and the Grafana dashboard JSON all validate locally. GitHub Actions remains the authoritative Linux container and full-stack smoke check.
 
+### Load-workflow debugging record
+
+- The first 10-user, 60-second Locust run reached the production-style default of 60 tenant requests per minute and correctly returned `429` for later search and query requests. That verified rate limiting but prevented the workflow from measuring the application path. Compose now accepts an environment override, and the performance workflow uses a 10,000-request test budget while the default remains 60.
+

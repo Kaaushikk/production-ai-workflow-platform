@@ -25,7 +25,10 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: python -m pip install -e ".[load]"
-      - run: docker compose up --detach --build --wait --wait-timeout 180
+      - name: Start stack with a load-test rate-limit budget
+        env:
+          APP_RATE_LIMIT_REQUESTS: "10000"
+        run: docker compose up --detach --build --wait --wait-timeout 180
       - name: Seed load-test tenant and document
         env:
           SMOKE_API_KEY: pai_load_test_key_1234567890

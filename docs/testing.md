@@ -24,6 +24,8 @@ locust -f load/locustfile.py --headless --users 10 --spawn-rate 2 `
 
 The GitHub `Performance` workflow exposes the user count and duration as manual inputs. Results depend on runner hardware, dataset size, service configuration, and network conditions. Record those conditions with any published result; this repository does not claim an unmeasured throughput or latency target.
 
+The performance workflow raises the test tenant's request budget to 10,000 per minute so the run measures the application path rather than the default 60-request protection limit. Rate-limit behavior is tested separately in the automated suite.
+
 ## Recovery behavior
 
 - Kafka delivery failure leaves the outbox row pending with a bounded retry time.
